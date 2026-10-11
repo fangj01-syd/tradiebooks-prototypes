@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Invoice Preview - TradieBooks</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -70,8 +71,9 @@
     <div class="total" id="total"></div>
   </div>
 
-  <button class="btn" onclick="window.print()">Export PDF</button>
-  <button class="btn" style="background:white; color:#1E3A2F; border:1.5px solid #1E3A2F; margin-top:10px;" onclick="copyEmail()">Copy email draft</button>
+  <button class="btn" onclick="downloadPDF()">Download PDF</button>
+  <button class="btn" style="background:white; color:#1E3A2F; border:1.5px solid #1E3A2F; margin-top:8px;" onclick="window.print()">Print</button>
+  <button class="btn" style="background:white; color:#1E3A2F; border:1.5px solid #1E3A2F; margin-top:8px;" onclick="copyEmail()">Copy email draft</button>
 
   <script>
     const params = new URLSearchParams(location.search);
@@ -92,6 +94,18 @@
       document.getElementById('amount').textContent = '$' + (inv.amount || inv.subtotal || 0).toFixed(2);
       document.getElementById('gst').textContent = '$' + (inv.gst || 0).toFixed(2);
       document.getElementById('total').textContent = 'Total: $' + (inv.total || 0).toFixed(2);
+    }
+
+    function downloadPDF() {
+      const element = document.getElementById('preview');
+      const opt = {
+        margin: 10,
+        filename: (inv && inv.number ? inv.number : 'invoice') + '.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
     }
 
     function copyEmail() {
