@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Settings - TradieBooks</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f6f4;
+    color: #1c211c;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 76px;
+  }
+  header {
+    background: white;
+    padding: 16px 20px;
+    font-size: 18px;
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+  }
+  .section { margin: 16px; }
+  .section h3 { font-size: 12px; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .item {
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .item button, .item label {
+    display: block;
+    width: 100%;
+    padding: 16px 18px;
+    text-align: left;
+    background: none;
+    border: none;
+    border-bottom: 1px solid #f2f2f2;
+    font-size: 16px;
+    color: #1c211c;
+  }
+  .item button:last-child, .item label:last-child { border: none; }
+  .danger { color: #c62828; }
+  nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px; background: white;
+    display: flex; border-top: 1px solid #eee; padding: 6px 0 10px;
+  }
+  nav a { flex: 1; text-align: center; text-decoration: none; color: #aaa; font-size: 10px; }
+  nav a.active { color: #1E3A2F; font-weight: 600; }
+  nav a div { font-size: 22px; }
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+  <header>More</header>
+
+  <div class="section">
+    <h3>Data</h3>
+  
+  <div style="margin: 8px 16px 16px; font-size: 13px; color: #888; line-height: 1.4;">
+    Data is stored only in this browser. Export a backup regularly.
+  </div>
+
+    <div class="item">
+      <button onclick="exportData()">Export backup</button>
+      <label>Import backup <input type="file" id="importFile" accept=".json" onchange="importData(this)"></label>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Danger</h3>
+    <div class="item">
+      <button class="danger" onclick="clearAll()">Clear all data</button>
+    </div>
+  </div>
+
+  <nav>
+    <a href="index.html"><div>🏠</div>Home</a>
+    <a href="invoices.html"><div>📄</div>Invoices</a>
+    <a href="receipts.html"><div>🧾</div>Receipts</a>
+    <a href="bas.html"><div>📊</div>BAS</a>
+    <a href="settings.html" class="active"><div>⚙️</div>More</a>
+  </nav>
+
+  <script>
+    function exportData() {
+      const data = {
+        invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
+        receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
+        exported: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tradiebooks-backup.json';
+      a.click();
+    }
+    function importData(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.invoices) localStorage.setItem('invoices', JSON.stringify(data.invoices));
+          if (data.receipts) localStorage.setItem('receipts', JSON.stringify(data.receipts));
+          alert('Imported');
+          location.reload();
+        } catch { alert('Invalid file'); }
+      };
+      reader.readAsText(file);
+    }
+    function clearAll() {
+      if (!confirm('Delete all data?')) return;
+      localStorage.removeItem('invoices');
+      localStorage.removeItem('receipts');
+      alert('Cleared');
+      location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>
