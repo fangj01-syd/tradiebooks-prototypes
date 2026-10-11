@@ -165,6 +165,8 @@
     <a href="settings.html"><div>⚙️</div>More</a>
   </nav>
 
+  <button onclick="exportBackup()" style="position:fixed; bottom:80px; right:16px; background:#163028; color:white; border:none; border-radius:20px; padding:8px 14px; font-size:12px; z-index:10;">Export</button>
+
   <script>
     if (!localStorage.getItem('guideDismissed')) document.getElementById('guide').style.display = 'block';
     function dismissGuide() {
