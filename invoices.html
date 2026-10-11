@@ -124,7 +124,8 @@
       const q = (document.getElementById('search').value || '').toLowerCase();
       const today = new Date().toISOString().slice(0, 10);
       const filtered = invoices.filter(inv => {
-        const matchSearch = (inv.customer || '').toLowerCase().includes(q) || (inv.desc || '').toLowerCase().includes(q);
+        const lineText = (inv.lines || []).map(l => l.desc || '').join(' ');
+        const matchSearch = (inv.customer || '').toLowerCase().includes(q) || (inv.desc || '').toLowerCase().includes(q) || lineText.toLowerCase().includes(q);
         const matchFilter = currentFilter === 'all' || (currentFilter === 'paid' && inv.paid) || (currentFilter === 'unpaid' && !inv.paid);
         return matchSearch && matchFilter;
       });
@@ -137,13 +138,14 @@
       filtered.forEach(inv => {
         const idx = invoices.indexOf(inv);
         const isOverdue = inv.dueDate && inv.dueDate < today && !inv.paid;
+        const itemSummary = inv.lines ? inv.lines.length + ' item' + (inv.lines.length > 1 ? 's' : '') : (inv.desc || '');
         const div = document.createElement('div');
         div.className = 'item';
         div.innerHTML = `
           <div class="top">
             <div>
               <strong>${inv.number || ''} · ${inv.customer || ''}</strong><br>
-              <small style="color:#888;">${inv.desc || ''} · $${(inv.total || 0).toFixed(2)}</small>
+              <small style="color:#888;">${itemSummary} · $${(inv.total || 0).toFixed(2)}</small>
               ${inv.dueDate ? `<br><small style="color:${isOverdue ? '#e65100' : '#888'};">Due ${inv.dueDate}${isOverdue ? ' · Overdue' : ''}</small>` : ''}
             </div>
             <span class="status ${inv.paid ? 'paid' : 'unpaid'}">${inv.paid ? 'Paid' : 'Unpaid'}</span>
