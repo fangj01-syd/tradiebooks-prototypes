@@ -59,10 +59,6 @@
   }
   .btn:active { transform: scale(0.97); }
   .btn.secondary { background: #c45c3e; box-shadow: 0 4px 12px rgba(196, 92, 62, 0.25); }
-  .guide {
-    background: #e8f4ec; margin: 16px; padding: 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; color: #163028;
-  }
-  .guide button { margin-top: 10px; background: none; border: none; color: #163028; font-weight: 600; font-size: 13px; }
   nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 430px; background: white;
@@ -76,31 +72,7 @@
   }
   nav a.active { color: #163028; font-weight: 600; }
   nav a div { font-size: 20px; }
-
-  .notice {
-    background: #fff8e6;
-    margin: 12px 16px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    font-size: 13px;
-    color: #7a5c00;
-    line-height: 1.4;
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .notice button {
-    background: none;
-    border: none;
-    color: #7a5c00;
-    font-size: 16px;
-    padding: 0;
-    margin-left: auto;
-    cursor: pointer;
-  }
-
   input, select, button { font-size: 16px; touch-action: manipulation; }
-
 </style>
 </head>
 <body>
@@ -109,17 +81,7 @@
     <div style="font-size:12px;color:#b0b8b0;">AU · Solo</div>
   </header>
 
-  <div class="notice" id="dataNotice">
-    <span>⚠️</span>
-    <span>Data is stored only on this device. Clearing browser data will delete it. Use More → Export backup to save a copy.</span>
-    <button onclick="document.getElementById('dataNotice').style.display='none'">×</button>
-  </div>
-
-  <div class="guide" id="guide" style="display:none;">
-    <strong>Quick start</strong><br>
-    Create an invoice → Add receipts → Check BAS
-    <button onclick="dismissGuide()">Got it</button>
-  </div>
+  <div id="overdueAlert" style="display:none; background:#ffebee; color:#c62828; margin:12px 16px; padding:12px 14px; border-radius:12px; font-size:14px;"></div>
 
   <div class="card">
     <h2>GST this quarter</h2>
@@ -131,7 +93,6 @@
     <h2>Unpaid invoices</h2>
     <div class="amount" id="unpaidAmount">$0</div>
     <div class="sub" id="unpaidCount">0 invoices</div>
-    <div class="sub" id="overdueInfo" style="color:#e65100; margin-top:2px;"></div>
   </div>
 
   <div class="stats">
@@ -147,6 +108,11 @@
     </div>
   </div>
 
+  <div class="card" style="margin-top:4px;">
+    <h2>Income (last 6 months)</h2>
+    <div id="chart" style="display:flex; align-items:flex-end; height:100px; gap:6px; margin-top:12px;"></div>
+  </div>
+
   <div class="recent">
     <h3>Recent</h3>
     <div id="recentList"></div>
@@ -155,57 +121,58 @@
   <a href="invoice.html" class="btn">+ New Invoice</a>
   <a href="receipt.html" class="btn secondary">+ Add Receipt</a>
 
-  <button class="btn" style="background:white; color:#163028; border:1.5px solid #163028; box-shadow:none; margin-top:4px;" onclick="exportBackup()">Export backup</button>
-
-  <label class="btn" style="background:white; color:#163028; border:1.5px solid #163028; box-shadow:none; margin-top:4px; text-align:center; cursor:pointer;">
-    Import backup
-    <input type="file" id="importFileHome" accept=".json" style="display:none;" onchange="importBackup(this)">
-  </label>
-
   <nav>
     <a href="index.html" class="active"><div>🏠</div>Home</a>
     <a href="invoices.html"><div>📄</div>Invoices</a>
     <a href="receipts.html"><div>🧾</div>Receipts</a>
     <a href="bas.html"><div>📊</div>BAS</a>
     <a href="reports.html"><div>📈</div>Reports</a>
-    <a href="customers.html"><div>👥</div>Clients</a>
     <a href="settings.html"><div>⚙️</div>More</a>
   </nav>
 
-  <button onclick="exportBackup()" style="position:fixed; bottom:80px; right:16px; background:#163028; color:white; border:none; border-radius:20px; padding:8px 14px; font-size:12px; z-index:10;">Export</button>
-
-  <script src="reporting-period.js"></script>
   <script>
-    if (!localStorage.getItem('guideDismissed')) document.getElementById('guide').style.display = 'block';
-    function dismissGuide() {
-      localStorage.setItem('guideDismissed', '1');
-      document.getElementById('guide').style.display = 'none';
-    }
     function load() {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
       const unpaid = invoices.filter(i => !i.paid);
       const unpaidTotal = unpaid.reduce((s, i) => s + (i.total || 0), 0);
-      const period = currentQuarter();
-      const salesGST = invoices.filter(i => period.includes(i.date)).reduce((s, i) => s + (i.gst || 0), 0);
-      const purchaseGST = receipts.filter(r => period.includes(r.date)).reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
+      const salesGST = invoices.reduce((s, i) => s + (i.gst || 0), 0);
+      const purchaseGST = receipts.reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
       const netGST = Math.max(0, salesGST - purchaseGST);
       document.getElementById('gstAmount').textContent = '$' + Math.round(netGST);
       document.getElementById('unpaidAmount').textContent = '$' + Math.round(unpaidTotal);
       document.getElementById('unpaidCount').textContent = unpaid.length + ' invoice' + (unpaid.length !== 1 ? 's' : '');
+
       const today = new Date().toISOString().slice(0, 10);
       const overdue = unpaid.filter(i => i.dueDate && i.dueDate < today);
-      const overdueEl = document.getElementById('overdueInfo');
+      const alertEl = document.getElementById('overdueAlert');
       if (overdue.length > 0) {
-        overdueEl.textContent = overdue.length + ' overdue';
-      } else {
-        overdueEl.textContent = '';
+        alertEl.style.display = 'block';
+        alertEl.innerHTML = `⚠️ You have <strong>${overdue.length}</strong> overdue invoice${overdue.length > 1 ? 's' : ''}`;
       }
+
       const month = new Date().toISOString().slice(0, 7);
       const monthIncome = invoices.filter(i => (i.date || '').startsWith(month)).reduce((s, i) => s + (i.total || 0), 0);
       const monthExpenses = receipts.filter(r => (r.date || '').startsWith(month)).reduce((s, r) => s + (r.amount || 0), 0);
       document.getElementById('monthIncome').textContent = '$' + Math.round(monthIncome);
       document.getElementById('monthExpenses').textContent = '$' + Math.round(monthExpenses);
+
+      // Chart
+      const chartEl = document.getElementById('chart');
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        months.push(d.toISOString().slice(0, 7));
+      }
+      const maxIncome = Math.max(...months.map(m => invoices.filter(inv => (inv.date||'').startsWith(m)).reduce((s,inv)=>s+(inv.total||0),0)), 1);
+      chartEl.innerHTML = months.map(m => {
+        const amt = invoices.filter(inv => (inv.date||'').startsWith(m)).reduce((s,inv)=>s+(inv.total||0),0);
+        const h = Math.round((amt / maxIncome) * 80) || 4;
+        const label = m.slice(5);
+        return `<div style="flex:1; text-align:center;"><div style="background:#163028; height:${h}px; border-radius:4px 4px 0 0;"></div><div style="font-size:10px; color:#888; margin-top:4px;">${label}</div></div>`;
+      }).join('');
+
       const recent = [
         ...invoices.slice(0, 4).map(i => ({ type: 'invoice', text: i.customer || 'Invoice', amount: i.total || 0, date: i.date })),
         ...receipts.slice(0, 4).map(r => ({ type: 'receipt', text: r.merchant || 'Receipt', amount: r.amount || 0, date: r.date }))
@@ -216,41 +183,6 @@
         : recent.map(r => `<div class="recent-item"><span>${r.type === 'invoice' ? '📄' : '🧾'} ${r.text}</span><span style="font-weight:600;">$${Math.round(r.amount)}</span></div>`).join('');
     }
     load();
-
-    function importBackup(input) {
-      const file = input.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        try {
-          const data = JSON.parse(e.target.result);
-          if (data.invoices) localStorage.setItem('invoices', JSON.stringify(data.invoices));
-          if (data.receipts) localStorage.setItem('receipts', JSON.stringify(data.receipts));
-          if (Number.isSafeInteger(data.lastInvoiceNumber) && data.lastInvoiceNumber >= 1000) {
-            localStorage.setItem('lastInvoiceNumber', String(Math.max(Number(localStorage.getItem('lastInvoiceNumber')) || 1000, data.lastInvoiceNumber)));
-          }
-          alert('Backup imported');
-          location.reload();
-        } catch {
-          alert('Invalid backup file');
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function exportBackup() {
-      const data = {
-        invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
-        receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
-        lastInvoiceNumber: Number(localStorage.getItem('lastInvoiceNumber')) || 1000,
-        exported: new Date().toISOString()
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'tradiebooks-backup.json';
-      a.click();
-    }
   </script>
 </body>
 </html>
