@@ -127,14 +127,16 @@
     <a href="settings.html"><div>⚙️</div>More</a>
   </nav>
 
+  <script src="reporting-period.js"></script>
   <script>
     function load() {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
       const unpaid = invoices.filter(i => !i.paid);
       const unpaidTotal = unpaid.reduce((s, i) => s + (i.total || 0), 0);
-      const salesGST = invoices.reduce((s, i) => s + (i.gst || 0), 0);
-      const purchaseGST = receipts.reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
+      const period = currentQuarter();
+      const salesGST = invoices.filter(i => period.includes(i.date)).reduce((s, i) => s + (i.gst || 0), 0);
+      const purchaseGST = receipts.filter(r => period.includes(r.date)).reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
       const netGST = Math.max(0, salesGST - purchaseGST);
       document.getElementById('gstAmount').textContent = '$' + Math.round(netGST);
       document.getElementById('unpaidAmount').textContent = '$' + Math.round(unpaidTotal);
@@ -148,7 +150,8 @@
         alertEl.innerHTML = `⚠️ You have <strong>${overdue.length}</strong> overdue invoice${overdue.length > 1 ? 's' : ''}`;
       }
 
-      const month = new Date().toISOString().slice(0, 7);
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       const monthIncome = invoices.filter(i => (i.date || '').startsWith(month)).reduce((s, i) => s + (i.total || 0), 0);
       const monthExpenses = receipts.filter(r => (r.date || '').startsWith(month)).reduce((s, r) => s + (r.amount || 0), 0);
       document.getElementById('monthIncome').textContent = '$' + Math.round(monthIncome);
@@ -157,9 +160,8 @@
       const chartEl = document.getElementById('chart');
       const months = [];
       for (let i = 5; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        months.push(d.toISOString().slice(0, 7));
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
       }
       const maxIncome = Math.max(...months.map(m => invoices.filter(inv => (inv.date||'').startsWith(m)).reduce((s,inv)=>s+(inv.total||0),0)), 1);
       chartEl.innerHTML = months.map((m, i) => {
