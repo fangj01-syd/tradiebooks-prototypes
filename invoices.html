@@ -63,6 +63,15 @@
   .paid { background: #e6f4ea; color: #1E3A2F; }
   .unpaid { background: #fff3e0; color: #e65100; }
   .empty { text-align: center; padding: 50px 20px; color: #aaa; font-size: 15px; }
+  dialog { width:calc(100% - 32px); max-width:398px; border:0; border-radius:16px; padding:20px; margin:auto; color:#1c211c; }
+  dialog::backdrop { background:rgba(0,0,0,.4); }
+  dialog h2 { font-size:18px; margin-bottom:8px; }
+  dialog p { font-size:13px; color:#667368; line-height:1.5; margin-bottom:14px; }
+  dialog label { display:block; font-size:13px; margin-bottom:6px; }
+  dialog input { width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size:16px; }
+  .dialog-actions { display:flex; gap:10px; margin-top:16px; }
+  .dialog-actions button { flex:1; padding:12px; border-radius:10px; border:1px solid #1E3A2F; background:white; color:#1E3A2F; font-size:15px; }
+  .dialog-actions button:last-child { background:#1E3A2F; color:white; }
   nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 430px; background: white;
@@ -82,6 +91,13 @@
     <button onclick="setFilter('paid')" id="fPaid" style="padding:6px 12px; border-radius:16px; border:1px solid #ddd; background:white;">Paid</button>
   </div>
   <div id="list"></div>
+  <dialog id="paymentDialog">
+    <h2 id="paymentTitle">Record payment</h2>
+    <p>Use the date you received the full payment. Cash-basis GST estimates use this date.</p>
+    <label for="paymentDate">Payment date</label>
+    <input type="date" id="paymentDate" required>
+    <div class="dialog-actions"><button type="button" onclick="paymentDialog.close()">Cancel</button><button type="button" onclick="savePayment()">Save payment</button></div>
+  </dialog>
   <nav>
     <a href="index.html"><div>🏠</div>Home</a>
     <a href="invoices.html" class="active"><div>📄</div>Invoices</a>
@@ -97,7 +113,8 @@
         invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
         receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
         lastInvoiceNumber: Number(localStorage.getItem('lastInvoiceNumber')) || 1000,
-        exported: new Date().toISOString()
+        exported: new Date().toISOString(),
+        gstBasis: localStorage.getItem('gstBasis') === 'cash' ? 'cash' : 'noncash'
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -108,8 +125,12 @@
   </script>
 
   <script src="invoice-utils.js"></script>
+  <script src="reporting-period.js"></script>
+  <script src="html-utils.js"></script>
   <script>
     let currentFilter = 'all';
+    let paymentIndex = -1;
+    const paymentDialog = document.getElementById('paymentDialog');
     function setFilter(f) {
       currentFilter = f;
       document.getElementById('fAll').style.background = f === 'all' ? '#1E3A2F' : 'white';
@@ -124,7 +145,7 @@
     function render() {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       const q = (document.getElementById('search').value || '').toLowerCase();
-      const today = new Date().toISOString().slice(0, 10);
+      const today = localDate();
       const filtered = invoices.filter(inv => {
         const lineText = (inv.lines || []).map(l => l.desc || '').join(' ');
         const matchSearch = (inv.customer || '').toLowerCase().includes(q) || (inv.desc || '').toLowerCase().includes(q) || lineText.toLowerCase().includes(q);
@@ -146,9 +167,10 @@
         div.innerHTML = `
           <div class="top">
             <div>
-              <strong>${inv.number || ''} · ${inv.customer || ''}</strong><br>
-              <small style="color:#888;">${itemSummary} · $${(inv.total || 0).toFixed(2)}</small>
-              ${inv.dueDate ? `<br><small style="color:${isOverdue ? '#e65100' : '#888'};">Due ${inv.dueDate}${isOverdue ? ' · Overdue' : ''}</small>` : ''}
+              <strong>${escapeHtml(inv.number || '')} · ${escapeHtml(inv.customer || '')}</strong><br>
+              <small style="color:#888;">${escapeHtml(itemSummary)} · $${Number(inv.total || 0).toFixed(2)}</small>
+              ${inv.dueDate ? `<br><small style="color:${isOverdue ? '#e65100' : '#888'};">Due ${escapeHtml(inv.dueDate)}${isOverdue ? ' · Overdue' : ''}</small>` : ''}
+              ${inv.paid ? `<br><small style="color:${inv.paidDate ? '#888' : '#a44b2f'};">${inv.paidDate ? 'Paid ' + escapeHtml(inv.paidDate) : 'Payment date needed'}</small>` : ''}
             </div>
             <span class="status ${inv.paid ? 'paid' : 'unpaid'}">${inv.paid ? 'Paid' : 'Unpaid'}</span>
           </div>
@@ -156,7 +178,8 @@
             <a href="preview.html?idx=${idx}">Preview</a>
             <a href="edit-invoice.html?idx=${idx}">Edit</a>
             <button onclick="duplicateInv(${idx})">Copy</button>
-            <button onclick="togglePaid(${idx})" class="${inv.paid ? 'paid' : ''}">${inv.paid ? 'Unpaid' : 'Paid'}</button>
+            <button onclick="${inv.paid ? 'markUnpaid' : 'openPayment'}(${idx})" class="${inv.paid ? 'paid' : ''}">${inv.paid ? 'Mark unpaid' : 'Record paid'}</button>
+            ${inv.paid ? `<button onclick="openPayment(${idx})">Payment date</button>` : ''}
             <button onclick="deleteInv(${idx})">Delete</button>
           </div>
         `;
@@ -172,18 +195,39 @@
       copy.id = Date.now();
       copy.number = nextInvoiceNumber(invoices);
       copy.paid = false;
-      copy.date = new Date().toISOString().slice(0, 10);
+      copy.date = localDate();
       delete copy.paidDate;
       invoices.unshift(copy);
       localStorage.setItem('invoices', JSON.stringify(invoices));
       render();
     }
 
-    function togglePaid(idx) {
+    function openPayment(idx) {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
-      invoices[idx].paid = !invoices[idx].paid;
-      if (invoices[idx].paid) invoices[idx].paidDate = new Date().toISOString().slice(0, 10);
-      else delete invoices[idx].paidDate;
+      const invoice = invoices[idx];
+      if (!invoice) return;
+      paymentIndex = idx;
+      document.getElementById('paymentTitle').textContent = invoice.paid ? 'Edit payment date' : 'Record payment';
+      document.getElementById('paymentDate').value = validDate(invoice.paidDate) ? invoice.paidDate : localDate();
+      paymentDialog.showModal();
+    }
+    function savePayment() {
+      const date = document.getElementById('paymentDate').value;
+      if (!validDate(date)) { alert('Enter a valid payment date'); return; }
+      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+      if (!invoices[paymentIndex]) { paymentDialog.close(); return; }
+      invoices[paymentIndex].paid = true;
+      invoices[paymentIndex].paidDate = date;
+      localStorage.setItem('invoices', JSON.stringify(invoices));
+      paymentDialog.close();
+      paymentIndex = -1;
+      render();
+    }
+    function markUnpaid(idx) {
+      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+      if (!invoices[idx]) return;
+      invoices[idx].paid = false;
+      delete invoices[idx].paidDate;
       localStorage.setItem('invoices', JSON.stringify(invoices));
       render();
     }

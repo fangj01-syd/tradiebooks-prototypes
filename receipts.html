@@ -100,7 +100,7 @@
         const merchant = document.createElement('strong');
         merchant.textContent = r.merchant || 'Receipt';
         const meta = document.createElement('small');
-        meta.textContent = `${r.category || 'Other'} · ${hasRecordedReceiptGst(r) ? 'GST $' + r.gst.toFixed(2) : 'GST to review'}`;
+        meta.textContent = `${r.date || 'No date'} · ${r.category || 'Other'} · ${hasRecordedReceiptGst(r) ? 'GST $' + r.gst.toFixed(2) : 'GST to review'}`;
         details.append(merchant, meta);
         const actions = document.createElement('div');
         actions.className = 'actions';

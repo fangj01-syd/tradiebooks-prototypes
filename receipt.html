@@ -92,6 +92,9 @@
       <input type="number" id="gst" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
       <p class="hint" id="gstHint">Enter the GST shown on the receipt, or 0 if there is none. BAS will use this amount.</p>
 
+      <label for="date">Receipt / payment date</label>
+      <input type="date" id="date" required>
+
       <label>Merchant</label>
       <input type="text" id="merchant" placeholder="e.g. Bunnings">
 
@@ -114,6 +117,7 @@
   </div>
 
   <script src="receipt-gst.js"></script>
+  <script src="reporting-period.js"></script>
   <script>
     let category = 'Materials';
     const params = new URLSearchParams(location.search);
@@ -121,6 +125,7 @@
     const idx = Number(params.get('idx'));
     const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
     const existing = editing && Number.isInteger(idx) && idx >= 0 ? receipts[idx] : null;
+    document.getElementById('date').value = localDate();
 
     function selectCategory(value) {
       category = value;
@@ -141,6 +146,7 @@
         document.getElementById('successTitle').textContent = 'Receipt updated';
         document.getElementById('amount').value = existing.amount;
         document.getElementById('merchant').value = existing.merchant || '';
+        document.getElementById('date').value = existing.date || localDate();
         if (hasRecordedReceiptGst(existing)) document.getElementById('gst').value = existing.gst;
         else document.getElementById('gstHint').textContent = 'GST was not recorded. Check the original receipt and enter the actual GST, or 0 if there is none.';
         selectCategory(existing.category || 'Other');
@@ -159,6 +165,7 @@
       const amount = Number(amountText);
       const gst = Number(gstText);
       const merchant = document.getElementById('merchant').value.trim();
+      const date = document.getElementById('date').value;
       if (!merchant || !amountText || !Number.isFinite(amount) || amount <= 0) {
         alert('Please enter merchant and a positive total paid');
         return;
@@ -167,13 +174,14 @@
         alert('Enter the GST shown on the receipt, or 0 if there is none');
         return;
       }
+      if (!validDate(date)) { alert('Enter a valid receipt date'); return; }
       if (editing) {
         if (!existing) return;
-        Object.assign(existing, { merchant, amount, gst, category });
+        Object.assign(existing, { merchant, amount, gst, category, date });
       } else {
         receipts.unshift({
           id: Date.now(), merchant, amount, gst, category,
-          date: new Date().toISOString().slice(0, 10)
+          date
         });
       }
       localStorage.setItem('receipts', JSON.stringify(receipts));

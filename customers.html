@@ -52,9 +52,10 @@
     <a href="bas.html"><div>📊</div>BAS</a>
     <a href="customers.html" class="active"><div>👥</div>Clients</a>
   </nav>
+  <script src="html-utils.js"></script>
   <script>
     const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
-    const customers = {};
+    const customers = Object.create(null);
     invoices.forEach(inv => {
       if (!inv.customer) return;
       if (!customers[inv.customer]) customers[inv.customer] = { total: 0, count: 0, unpaid: 0 };
@@ -73,7 +74,7 @@
         div.className = 'item';
         div.innerHTML = `
           <div>
-            <strong>${name}</strong><br>
+            <strong>${escapeHtml(name)}</strong><br>
             <small style="color:#888;">${c.count} invoice${c.count>1?'s':''}</small>
           </div>
           <div style="text-align:right;">

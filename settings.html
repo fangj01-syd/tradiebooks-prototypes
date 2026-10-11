@@ -52,10 +52,26 @@
   nav a.active { color: #1E3A2F; font-weight: 600; }
   nav a div { font-size: 22px; }
   input[type=file] { display: none; }
+  .basis { padding:16px 18px; background:white; border-radius:14px; }
+  .basis label { display:block; font-size:14px; margin-bottom:8px; }
+  .basis select { width:100%; padding:12px; font-size:16px; border:1px solid #ddd; border-radius:10px; background:white; }
+  .note { margin-top:8px; color:#667368; font-size:12px; line-height:1.5; }
+  .import-preview { display:none; background:white; border-radius:14px; padding:16px 18px; margin-top:10px; font-size:13px; line-height:1.6; }
+  .import-preview p { margin-bottom:10px; }
+  .import-preview button { width:100%; padding:12px; border:0; border-radius:10px; background:#1E3A2F; color:white; font-size:15px; }
 </style>
 </head>
 <body>
   <header>More</header>
+
+  <div class="section">
+    <h3>BAS estimate</h3>
+    <div class="basis">
+      <label for="gstBasis">GST accounting basis</label>
+      <select id="gstBasis" onchange="saveBasis()"><option value="noncash">Non-cash (invoice or earlier payment)</option><option value="cash">Cash (payment date)</option></select>
+      <p class="note">Choose the basis used for your GST reporting. Cash estimates include fully paid invoices on their recorded payment date. Partial payments are not supported.</p>
+    </div>
+  </div>
 
   <div class="section">
     <h3>Data</h3>
@@ -67,6 +83,11 @@
     <div class="item">
       <button onclick="exportData()">Export backup</button>
       <label>Import backup <input type="file" id="importFile" accept=".json" onchange="importData(this)"></label>
+    </div>
+    <div class="import-preview" id="importPreview">
+      <p id="importSummary"></p>
+      <p style="color:#a44b2f;">Import replaces the current invoices, receipts and GST basis in this browser. Export a backup first if you want to keep them.</p>
+      <button type="button" onclick="confirmImport()">Replace current data</button>
     </div>
   </div>
 
@@ -85,43 +106,100 @@
     <a href="settings.html" class="active"><div>⚙️</div>More</a>
   </nav>
 
+  <script src="reporting-period.js"></script>
   <script>
+    let pendingBackup = null;
+    document.getElementById('gstBasis').value = localStorage.getItem('gstBasis') === 'cash' ? 'cash' : 'noncash';
+    function saveBasis() {
+      localStorage.setItem('gstBasis', document.getElementById('gstBasis').value);
+    }
     function exportData() {
       const data = {
         invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
         receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
         lastInvoiceNumber: Number(localStorage.getItem('lastInvoiceNumber')) || 1000,
-        exported: new Date().toISOString()
+        exported: new Date().toISOString(),
+        gstBasis: document.getElementById('gstBasis').value
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'tradiebooks-backup.json';
       a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+    function isRecord(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
+    function isAmount(value) { return typeof value === 'number' && Number.isFinite(value) && value >= 0; }
+    function validateBackup(data) {
+      if (!isRecord(data) || !Array.isArray(data.invoices) || !Array.isArray(data.receipts)) return false;
+      if (data.gstBasis !== undefined && !['cash', 'noncash'].includes(data.gstBasis)) return false;
+      if (data.lastInvoiceNumber !== undefined && (!Number.isSafeInteger(data.lastInvoiceNumber) || data.lastInvoiceNumber < 1000)) return false;
+      const validInvoice = inv => isRecord(inv) && validDate(inv.date) && isAmount(inv.total) &&
+          typeof inv.customer === 'string' &&
+          (inv.number === undefined || typeof inv.number === 'string') &&
+          (inv.paid === undefined || typeof inv.paid === 'boolean') &&
+          (inv.dueDate === undefined || inv.dueDate === '' || validDate(inv.dueDate)) &&
+          (inv.gst === undefined || isAmount(inv.gst)) &&
+          (inv.paidDate === undefined || validDate(inv.paidDate)) &&
+          (inv.lines === undefined || (Array.isArray(inv.lines) && inv.lines.every(line =>
+            isRecord(line) && typeof line.desc === 'string' && isAmount(line.qty) && isAmount(line.price))));
+      const validReceipt = rec => isRecord(rec) && validDate(rec.date) && isAmount(rec.amount) &&
+          typeof rec.merchant === 'string' &&
+          (rec.category === undefined || typeof rec.category === 'string') &&
+          (rec.gst === undefined || isAmount(rec.gst));
+      return data.invoices.every(validInvoice) && data.receipts.every(validReceipt);
     }
     function importData(input) {
       const file = input.files[0];
       if (!file) return;
+      pendingBackup = null;
+      document.getElementById('importPreview').style.display = 'none';
+      if (file.size > 4 * 1024 * 1024) { alert('Backup is too large (maximum 4 MB)'); input.value = ''; return; }
       const reader = new FileReader();
       reader.onload = e => {
         try {
           const data = JSON.parse(e.target.result);
-          if (data.invoices) localStorage.setItem('invoices', JSON.stringify(data.invoices));
-          if (data.receipts) localStorage.setItem('receipts', JSON.stringify(data.receipts));
-          if (Number.isSafeInteger(data.lastInvoiceNumber) && data.lastInvoiceNumber >= 1000) {
-            localStorage.setItem('lastInvoiceNumber', String(Math.max(Number(localStorage.getItem('lastInvoiceNumber')) || 1000, data.lastInvoiceNumber)));
-          }
-          alert('Imported');
-          location.reload();
-        } catch { alert('Invalid file'); }
+          if (!validateBackup(data)) throw new Error('Invalid backup');
+          pendingBackup = data;
+          const currentInvoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+          const currentReceipts = JSON.parse(localStorage.getItem('receipts') || '[]');
+          document.getElementById('importSummary').textContent = `${file.name}: ${data.invoices.length} invoice(s), ${data.receipts.length} receipt(s). Current browser: ${currentInvoices.length} invoice(s), ${currentReceipts.length} receipt(s). GST basis after import: ${data.gstBasis === 'cash' ? 'Cash' : 'Non-cash'}.`;
+          document.getElementById('importPreview').style.display = 'block';
+        } catch { alert('Invalid backup file'); input.value = ''; }
       };
+      reader.onerror = () => { alert('Could not read backup file'); input.value = ''; };
       reader.readAsText(file);
+    }
+    function confirmImport() {
+      if (!pendingBackup) return;
+      const keys = ['invoices', 'receipts', 'lastInvoiceNumber', 'gstBasis'];
+      const before = Object.fromEntries(keys.map(key => [key, localStorage.getItem(key)]));
+      try {
+        localStorage.setItem('invoices', JSON.stringify(pendingBackup.invoices));
+        localStorage.setItem('receipts', JSON.stringify(pendingBackup.receipts));
+        const highest = pendingBackup.invoices.reduce((max, inv) => {
+          const match = /^INV-(\d+)$/.exec(inv.number || '');
+          return match ? Math.max(max, Number(match[1])) : max;
+        }, 1000);
+        localStorage.setItem('lastInvoiceNumber', String(Math.max(highest, pendingBackup.lastInvoiceNumber || 1000)));
+        localStorage.setItem('gstBasis', pendingBackup.gstBasis === 'cash' ? 'cash' : 'noncash');
+        pendingBackup = null;
+        alert('Backup imported');
+        location.reload();
+      } catch {
+        let restored = true;
+        keys.forEach(key => {
+          try { if (before[key] === null) localStorage.removeItem(key); else localStorage.setItem(key, before[key]); } catch { restored = false; }
+        });
+        alert(restored ? 'Import failed. Your previous data was restored.' : 'Import failed. Some previous data could not be restored; use your exported backup.');
+      }
     }
     function clearAll() {
       if (!confirm('Delete all data?')) return;
       localStorage.removeItem('invoices');
       localStorage.removeItem('receipts');
       localStorage.removeItem('lastInvoiceNumber');
+      localStorage.removeItem('gstBasis');
       alert('Cleared');
       location.href = 'index.html';
     }

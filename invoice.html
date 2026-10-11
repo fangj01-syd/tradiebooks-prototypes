@@ -130,6 +130,7 @@
   </nav>
 
   <script src="invoice-utils.js"></script>
+  <script src="reporting-period.js"></script>
   <script>
     let lineCount = 0;
 
@@ -197,7 +198,7 @@
       if (terms !== 'due') {
         const d = new Date();
         d.setDate(d.getDate() + parseInt(terms));
-        dueDate = d.toISOString().slice(0, 10);
+        dueDate = localDate(d);
       }
 
       invoices.unshift({
@@ -213,7 +214,7 @@
         notes: document.getElementById('notes').value.trim(),
         abn: document.getElementById('abn').value.trim(),
         paid: false,
-        date: new Date().toISOString().slice(0, 10)
+        date: localDate()
       });
       localStorage.setItem('invoices', JSON.stringify(invoices));
       document.getElementById('formView').style.display = 'none';

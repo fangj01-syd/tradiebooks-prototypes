@@ -83,8 +83,9 @@
   <div class="card">
     <h2>GST this quarter</h2>
     <div class="amount" id="gstAmount">$0</div>
-    <div class="sub">to pay</div>
+    <div class="sub" id="gstNetLabel">to pay</div>
     <a id="gstPending" href="receipts.html" class="sub" style="display:none; color:#a44b2f;">Review receipt GST</a>
+    <a id="paymentPending" href="invoices.html" class="sub" style="display:none; color:#a44b2f;">Review payment dates</a>
   </div>
 
   <div class="card">
@@ -130,6 +131,8 @@
 
   <script src="reporting-period.js"></script>
   <script src="receipt-gst.js"></script>
+  <script src="gst-report.js"></script>
+  <script src="html-utils.js"></script>
   <script>
     function load() {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
@@ -137,18 +140,19 @@
       const unpaid = invoices.filter(i => !i.paid);
       const unpaidTotal = unpaid.reduce((s, i) => s + (i.total || 0), 0);
       const period = currentQuarter();
-      const salesGST = invoices.filter(i => period.includes(i.date)).reduce((s, i) => s + (i.gst || 0), 0);
-      const gstSummary = receiptGstSummary(receipts.filter(r => period.includes(r.date)));
-      const purchaseGST = gstSummary.total;
-      const netGST = Math.max(0, salesGST - purchaseGST);
-      document.getElementById('gstAmount').textContent = '$' + Math.round(netGST);
+      const report = gstEstimate(invoices, receipts, period);
+      document.getElementById('gstAmount').textContent = '$' + Math.round(Math.abs(report.net));
+      document.getElementById('gstNetLabel').textContent = `${report.net < 0 ? 'credit estimate' : 'to pay'} · ${gstBasis() === 'cash' ? 'cash' : 'non-cash'} basis`;
       const gstPending = document.getElementById('gstPending');
-      gstPending.style.display = gstSummary.pending ? 'block' : 'none';
-      gstPending.textContent = `${gstSummary.pending} receipt${gstSummary.pending === 1 ? '' : 's'} need${gstSummary.pending === 1 ? 's' : ''} GST review`;
+      gstPending.style.display = report.pendingReceipts ? 'block' : 'none';
+      gstPending.textContent = receiptReviewText(report.pendingReceipts);
+      const paymentPending = document.getElementById('paymentPending');
+      paymentPending.style.display = report.missingPaymentDates ? 'block' : 'none';
+      paymentPending.textContent = paymentReviewText(report.missingPaymentDates);
       document.getElementById('unpaidAmount').textContent = '$' + Math.round(unpaidTotal);
       document.getElementById('unpaidCount').textContent = unpaid.length + ' invoice' + (unpaid.length !== 1 ? 's' : '');
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = localDate();
       const overdue = unpaid.filter(i => i.dueDate && i.dueDate < today);
       const alertEl = document.getElementById('overdueAlert');
       if (overdue.length > 0) {
@@ -189,7 +193,7 @@
       const recentList = document.getElementById('recentList');
       recentList.innerHTML = recent.length === 0
         ? '<div style="color:#aaa;font-size:14px;padding:12px 0;">No activity yet</div>'
-        : recent.map(r => `<div class="recent-item"><span>${r.type === 'invoice' ? '📄' : '🧾'} ${r.text}</span><span style="font-weight:600;">$${Math.round(r.amount)}</span></div>`).join('');
+        : recent.map(r => `<div class="recent-item"><span>${r.type === 'invoice' ? '📄' : '🧾'} ${escapeHtml(r.text)}</span><span style="font-weight:600;">$${Math.round(r.amount)}</span></div>`).join('');
     }
     load();
   </script>

@@ -62,10 +62,13 @@
   </div>
 
   <div class="card">
-    <h3>This quarter (GST)</h3>
+    <h3>Quarterly GST</h3>
+    <label for="quarterSelect" style="display:block; color:#555; font-size:13px; margin-bottom:6px;">Quarter</label>
+    <select id="quarterSelect" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:10px; background:white; font-size:16px;"></select>
+    <p id="gstBasisLabel" style="font-size:12px; color:#777; margin-bottom:6px;"></p>
     <div class="row"><span class="label">GST on sales</span><span class="value" id="qGstIn">$0</span></div>
     <div class="row"><span class="label">GST on purchases</span><span class="value" id="qGstOut">$0</span></div>
-    <div class="row"><span class="label">GST to pay</span><span class="value highlight" id="qNet">$0</span></div>
+    <div class="row"><span class="label" id="qNetLabel">GST to pay</span><span class="value highlight" id="qNet">$0</span></div>
     <div id="gstPending" style="display:none; color:#a44b2f; font-size:13px; padding-top:10px;"></div>
   </div>
 
@@ -92,12 +95,13 @@
 
   <script src="reporting-period.js"></script>
   <script src="receipt-gst.js"></script>
+  <script src="gst-report.js"></script>
+  <script src="html-utils.js"></script>
   <script>
     const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
     const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
     const now = new Date();
-    const month = now.toISOString().slice(0, 7);
-    const period = currentQuarter();
+    const month = localDate(now).slice(0, 7);
 
     const mIncome = invoices.filter(i => (i.date||'').startsWith(month)).reduce((s,i)=>s+(i.total||0),0);
     const mExpenses = receipts.filter(r => (r.date||'').startsWith(month)).reduce((s,r)=>s+(r.amount||0),0);
@@ -105,29 +109,40 @@
     document.getElementById('mExpenses').textContent = '$' + Math.round(mExpenses);
     document.getElementById('mProfit').textContent = '$' + Math.round(mIncome - mExpenses);
 
-    const qInvoices = invoices.filter(i => period.includes(i.date));
-    const qReceipts = receipts.filter(r => period.includes(r.date));
-    const gstIn = qInvoices.reduce((s,i)=>s+(i.gst||0),0);
-    const gstSummary = receiptGstSummary(qReceipts);
-    const gstOut = gstSummary.total;
-    if (gstSummary.pending) {
+    const quarterSelect = document.getElementById('quarterSelect');
+    availableQuarters(invoices, receipts).forEach(quarter => {
+      const option = document.createElement('option');
+      option.value = quarter.value;
+      option.textContent = quarter.label;
+      quarterSelect.appendChild(option);
+    });
+    quarterSelect.value = currentQuarter().value;
+    function renderQuarter() {
+      const report = gstEstimate(invoices, receipts, quarterFromValue(quarterSelect.value));
+      document.getElementById('gstBasisLabel').textContent = `${gstBasis() === 'cash' ? 'Cash' : 'Non-cash'} basis`;
       const pending = document.getElementById('gstPending');
-      pending.style.display = 'block';
-      pending.textContent = `${gstSummary.pending} receipt${gstSummary.pending === 1 ? '' : 's'} need${gstSummary.pending === 1 ? 's' : ''} GST review; excluded from this estimate.`;
+      const notices = [];
+      if (report.pendingReceipts) notices.push(`${receiptReviewText(report.pendingReceipts)}.`);
+      if (report.missingPaymentDates) notices.push(`${paymentReviewText(report.missingPaymentDates)}.`);
+      pending.style.display = notices.length ? 'block' : 'none';
+      pending.textContent = notices.join(' ');
+      document.getElementById('qGstIn').textContent = '$' + Math.round(report.salesGst);
+      document.getElementById('qGstOut').textContent = '$' + Math.round(report.purchaseGst);
+      document.getElementById('qNetLabel').textContent = report.net < 0 ? 'GST credit estimate' : 'GST to pay';
+      document.getElementById('qNet').textContent = '$' + Math.round(Math.abs(report.net));
     }
-    document.getElementById('qGstIn').textContent = '$' + Math.round(gstIn);
-    document.getElementById('qGstOut').textContent = '$' + Math.round(gstOut);
-    document.getElementById('qNet').textContent = '$' + Math.round(Math.max(0, gstIn - gstOut));
+    quarterSelect.addEventListener('change', renderQuarter);
+    renderQuarter();
 
     const unpaid = invoices.filter(i => !i.paid);
-    const today = now.toISOString().slice(0,10);
+    const today = localDate(now);
     const overdue = unpaid.filter(i => i.dueDate && i.dueDate < today);
     document.getElementById('totalInv').textContent = invoices.length;
     document.getElementById('paidInv').textContent = invoices.filter(i=>i.paid).length;
     document.getElementById('unpaidInv').textContent = unpaid.length;
     document.getElementById('overdueInv').textContent = overdue.length;
 
-    const cust = {};
+    const cust = Object.create(null);
     invoices.forEach(i => {
       if (!i.customer) return;
       cust[i.customer] = (cust[i.customer] || 0) + (i.total || 0);
@@ -138,7 +153,7 @@
       topEl.innerHTML = '<div style="color:#aaa; font-size:14px;">No data yet</div>';
     } else {
       topEl.innerHTML = topCustomers.map(([name, amt]) =>
-        `<div class="row"><span class="label">${name}</span><span class="value">$${Math.round(amt)}</span></div>`
+        `<div class="row"><span class="label">${escapeHtml(name)}</span><span class="value">$${Math.round(amt)}</span></div>`
       ).join('');
     }
   </script>

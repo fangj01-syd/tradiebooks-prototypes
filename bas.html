@@ -77,8 +77,10 @@
 <body>
   <header>
     <a href="index.html">←</a>
-    <h1>BAS this quarter</h1>
+    <h1>BAS estimate</h1>
   </header>
+  <label for="quarterSelect" style="display:block; margin:14px 16px 4px; font-size:13px; color:#5a655a;">Quarter</label>
+  <select id="quarterSelect" style="display:block; width:calc(100% - 32px); margin:0 16px; padding:12px; border:1px solid #d9e2d9; border-radius:12px; background:white; font-size:16px;"></select>
   <p id="period" style="margin:12px 16px 0; color:#5a655a; font-size:13px;"></p>
 
   <div class="card">
@@ -88,14 +90,14 @@
   </div>
 
   <div class="highlight">
-    <div style="font-size:14px; opacity:0.85;">GST to pay</div>
+    <div style="font-size:14px; opacity:0.85;" id="netLabel">GST to pay</div>
     <div class="amount" id="net">$0</div>
     <div style="font-size:12px; opacity:0.7;">1A − 1B</div>
   </div>
 
-  <p id="gstPending" style="display:none; margin:0 16px; color:#a44b2f; font-size:13px;"></p>
+  <p id="gstPending" style="display:none; margin:0 16px; color:#a44b2f; font-size:13px; line-height:1.5;"></p>
   <button class="btn" onclick="exportBAS()">Copy for accountant</button>
-  <p style="margin:8px 16px; color:#5a655a; font-size:12px; line-height:1.5;">Estimate from recorded dates. Check your GST accounting basis and purchase credits before lodging.</p>
+  <p style="margin:8px 16px; color:#5a655a; font-size:12px; line-height:1.5;">Estimate only. Cash basis uses full invoice payment dates; partial payments are not supported. Receipts use their recorded date. Check purchase credit eligibility before lodging.</p>
 
   <nav>
     <a href="index.html"><div>🏠</div>Home</a>
@@ -107,33 +109,44 @@
 
   <script src="reporting-period.js"></script>
   <script src="receipt-gst.js"></script>
+  <script src="gst-report.js"></script>
   <script>
     const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
     const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
-    const period = currentQuarter();
-    const quarterInvoices = invoices.filter(i => period.includes(i.date));
-    const quarterReceipts = receipts.filter(r => period.includes(r.date));
-    const endDate = new Date(period.end + 'T12:00:00');
-    endDate.setDate(endDate.getDate() - 1);
+    const quarterSelect = document.getElementById('quarterSelect');
+    availableQuarters(invoices, receipts).forEach(quarter => {
+      const option = document.createElement('option');
+      option.value = quarter.value;
+      option.textContent = quarter.label;
+      quarterSelect.appendChild(option);
+    });
+    quarterSelect.value = currentQuarter().value;
     const formatDate = value => new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(value);
-    const periodLabel = `${formatDate(new Date(period.start + 'T12:00:00'))} – ${formatDate(endDate)}`;
-    document.getElementById('period').textContent = periodLabel;
-    const totalSales = quarterInvoices.reduce((s, i) => s + (i.total || 0), 0);
-    const gstSales = quarterInvoices.reduce((s, i) => s + (i.gst || 0), 0);
-    const gstSummary = receiptGstSummary(quarterReceipts);
-    const gstPurchases = gstSummary.total;
-    const net = Math.max(0, gstSales - gstPurchases);
-    if (gstSummary.pending) {
+    let report;
+    let periodLabel;
+    function renderBAS() {
+      const period = quarterFromValue(quarterSelect.value);
+      report = gstEstimate(invoices, receipts, period);
+      const endDate = new Date(period.end + 'T12:00:00');
+      endDate.setDate(endDate.getDate() - 1);
+      periodLabel = `${formatDate(new Date(period.start + 'T12:00:00'))} – ${formatDate(endDate)}`;
+      document.getElementById('period').textContent = `${periodLabel} · ${gstBasis() === 'cash' ? 'Cash' : 'Non-cash'} basis`;
       const pending = document.getElementById('gstPending');
-      pending.style.display = 'block';
-      pending.textContent = `${gstSummary.pending} receipt${gstSummary.pending === 1 ? '' : 's'} in this quarter need${gstSummary.pending === 1 ? 's' : ''} GST review. Their GST is excluded from 1B.`;
+      const notices = [];
+      if (report.pendingReceipts) notices.push(`${report.pendingReceipts} receipt${report.pendingReceipts === 1 ? '' : 's'} in this quarter need${report.pendingReceipts === 1 ? 's' : ''} GST review. Their GST is excluded from 1B.`);
+      if (report.missingPaymentDates) notices.push(`${paymentReviewText(report.missingPaymentDates)}; excluded from cash-basis sales. Edit the date in Invoices.`);
+      pending.style.display = notices.length ? 'block' : 'none';
+      pending.textContent = notices.join(' ');
+      document.getElementById('g1').textContent = '$' + Math.round(report.totalSales);
+      document.getElementById('a1').textContent = '$' + Math.round(report.salesGst);
+      document.getElementById('b1').textContent = '$' + Math.round(report.purchaseGst);
+      document.getElementById('netLabel').textContent = report.net < 0 ? 'GST credit estimate' : 'GST to pay';
+      document.getElementById('net').textContent = '$' + Math.round(Math.abs(report.net));
     }
-    document.getElementById('g1').textContent = '$' + Math.round(totalSales);
-    document.getElementById('a1').textContent = '$' + Math.round(gstSales);
-    document.getElementById('b1').textContent = '$' + Math.round(gstPurchases);
-    document.getElementById('net').textContent = '$' + Math.round(net);
+    quarterSelect.addEventListener('change', renderBAS);
+    renderBAS();
     function exportBAS() {
-      const text = `TradieBooks BAS estimate (${periodLabel})\n\nG1 Total sales: $${totalSales.toFixed(2)}\n1A GST on sales: $${gstSales.toFixed(2)}\n1B GST on purchases: $${gstPurchases.toFixed(2)}\nGST to pay: $${net.toFixed(2)}\n\n${gstSummary.pending} receipt(s) need GST review and are excluded from 1B. Check your GST accounting basis and purchase credits before lodging.`;
+      const text = `TradieBooks BAS estimate (${periodLabel}, ${gstBasis()} basis)\n\nG1 Total sales: $${report.totalSales.toFixed(2)}\n1A GST on sales: $${report.salesGst.toFixed(2)}\n1B GST on purchases: $${report.purchaseGst.toFixed(2)}\n${report.net < 0 ? 'GST credit estimate' : 'GST to pay'}: $${Math.abs(report.net).toFixed(2)}\n\n${receiptReviewText(report.pendingReceipts)}. ${paymentReviewText(report.missingPaymentDates)}. Check purchase credit eligibility and accounting basis before lodging.`;
       navigator.clipboard.writeText(text).then(() => alert('Copied')).catch(() => alert(text));
     }
   </script>
