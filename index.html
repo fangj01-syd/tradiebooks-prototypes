@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradieBooks Interface Prototypes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f5f7f5;
+    color: #1c211c;
+    padding: 20px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  header h1 {
+    font-size: 28px;
+    color: #1E3A2F;
+  }
+  header p {
+    color: #5a6b5a;
+    margin-top: 8px;
+  }
+  .section {
+    margin-bottom: 48px;
+  }
+  .section h2 {
+    font-size: 20px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #1E3A2F;
+    color: #1E3A2F;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  .phone {
+    width: 100%;
+    height: 420px;
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .phone img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+  .label {
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .nav {
+    position: sticky;
+    top: 0;
+    background: white;
+    padding: 12px 20px;
+    margin: -20px -20px 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    z-index: 10;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .nav a {
+    color: #1E3A2F;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: #eef5ee;
+  }
+  .nav a:hover { background: #d4e8d4; }
+</style>
+</head>
+<body>
+  <div class="nav">
+    <a href="#mvp">Version 1 Core</a>
+    <a href="#lists">Lists & Management</a>
+    <a href="#v2">Version 2 Features</a>
+    <a href="#payment">Payment Flow</a>
+    <a href="#more">More Screens</a>
+  </div>
+
+  <header>
+    <h1>TradieBooks Interface Prototypes</h1>
+    <p>Solo Trader Accounting App · Mobile First</p>
+  </header>
+
+  <div class="section" id="mvp">
+    <h2>Version 1 – Core Flow</h2>
+    <div class="gallery" id="gallery-mvp"></div>
+  </div>
+
+  <div class="section" id="lists">
+    <h2>Lists, Settings & Management</h2>
+    <div class="gallery" id="gallery-lists"></div>
+  </div>
+
+  <div class="section" id="v2">
+    <h2>Version 2 Features</h2>
+    <div class="gallery" id="gallery-v2"></div>
+  </div>
+
+  <div class="section" id="payment">
+    <h2>Complete Payment Flow</h2>
+    <div class="gallery" id="gallery-payment"></div>
+  </div>
+
+  <div class="section" id="more">
+    <h2>Additional Key Screens</h2>
+    <div class="gallery" id="gallery-more"></div>
+  </div>
+
+  <script>
+    const images = [
+      "0ivCs.jpg","2uwCn.jpg","3qg9H.jpg","3zJaM.jpg","5VS04.jpg",
+      "6HBm5.jpg","7XpmX.jpg","82XEI.jpg","9iODl.jpg","AMvdN.jpg",
+      "B2q6J.jpg","ETYKV.jpg","FI8mk.jpg","JukgA.jpg","Kb0dx.jpg",
+      "MZVIn.jpg","NU9n0.jpg","NaAMz.jpg","QPigm.jpg","S7O0N.jpg",
+      "SaBMN.jpg","Sk2ku.jpg","VjkQv.jpg","VqeB7.jpg","ZEOxz.jpg",
+      "ZpCuf.jpg","aaAMd.jpg","aci6Y.jpg","auacW.jpg","b86fF.jpg",
+      "b88CS.jpg","eekim.jpg","fuJmv.jpg","gEyh0.jpg","gxmKH.jpg",
+      "hK1M3.jpg","ilfTy.jpg","jW2qd.jpg","kRLke.jpg","krYrE.jpg",
+      "lVv2B.jpg","lZm5M.jpg","mrypZ.jpg","nbcPL.jpg","pOrOd.jpg",
+      "pqO8Q.jpg","sHx5K.jpg","tYCr4.jpg","uRvov.jpg","uXoR7.jpg"
+    ];
+
+    const sections = {
+      mvp: images.slice(0, 10),
+      lists: images.slice(10, 20),
+      v2: images.slice(20, 32),
+      payment: images.slice(32, 40),
+      more: images.slice(40)
+    };
+
+    function renderGallery(id, list) {
+      const el = document.getElementById(id);
+      list.forEach((img, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="phone">
+            <img src="rendered/${img}" alt="Screen ${i+1}">
+          </div>
+          <div class="label">Screen ${i+1}</div>
+        `;
+        el.appendChild(card);
+      });
+    }
+
+    renderGallery('gallery-mvp', sections.mvp);
+    renderGallery('gallery-lists', sections.lists);
+    renderGallery('gallery-v2', sections.v2);
+    renderGallery('gallery-payment', sections.payment);
+    renderGallery('gallery-more', sections.more);
+  </script>
+</body>
+</html>
