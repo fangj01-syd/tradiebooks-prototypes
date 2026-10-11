@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Invoices - TradieBooks</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f6f4;
+    color: #1c211c;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 76px;
+  }
+  header {
+    background: white;
+    padding: 14px 20px;
+    font-size: 18px;
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header a { font-size: 14px; color: #1E3A2F; text-decoration: none; font-weight: 600; }
+  .search {
+    margin: 12px 16px;
+    padding: 12px 14px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 16px;
+    width: calc(100% - 32px);
+    background: white;
+    outline: none;
+  }
+  .search:focus { border-color: #1E3A2F; }
+  .item {
+    background: white;
+    margin: 10px 16px;
+    padding: 16px;
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .actions { margin-top: 12px; display: flex; gap: 6px; }
+  .actions button, .actions a {
+    flex: 1;
+    padding: 9px 4px;
+    border: 1px solid #e8e8e8;
+    background: white;
+    border-radius: 8px;
+    font-size: 12px;
+    text-align: center;
+    text-decoration: none;
+    color: #444;
+  }
+  .actions button.paid { background: #1E3A2F; color: white; border-color: #1E3A2F; }
+  .status { font-size: 11px; padding: 3px 8px; border-radius: 10px; font-weight: 500; }
+  .paid { background: #e6f4ea; color: #1E3A2F; }
+  .unpaid { background: #fff3e0; color: #e65100; }
+  .empty { text-align: center; padding: 50px 20px; color: #aaa; font-size: 15px; }
+  nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px; background: white;
+    display: flex; border-top: 1px solid #eee; padding: 6px 0 10px;
+  }
+  nav a { flex: 1; text-align: center; text-decoration: none; color: #aaa; font-size: 10px; }
+  nav a.active { color: #1E3A2F; font-weight: 600; }
+  nav a div { font-size: 22px; }
+</style>
+</head>
+<body>
+  <header>Invoices <a href="invoice.html">+ New</a></header>
+  <input type="text" class="search" id="search" placeholder="Search..." oninput="render()">
+  <div id="list"></div>
+  <nav>
+    <a href="index.html"><div>🏠</div>Home</a>
+    <a href="invoices.html" class="active"><div>📄</div>Invoices</a>
+    <a href="receipts.html"><div>🧾</div>Receipts</a>
+    <a href="bas.html"><div>📊</div>BAS</a>
+    <a href="settings.html"><div>⚙️</div>More</a>
+  </nav>
+  <script>
+    function render() {
+      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+      const q = (document.getElementById('search').value || '').toLowerCase();
+      const filtered = invoices.filter(inv =>
+        (inv.customer || '').toLowerCase().includes(q) || (inv.desc || '').toLowerCase().includes(q)
+      );
+      const list = document.getElementById('list');
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty">' + (invoices.length === 0 ? 'No invoices yet' : 'No matches') + '</div>';
+        return;
+      }
+      list.innerHTML = '';
+      filtered.forEach(inv => {
+        const idx = invoices.indexOf(inv);
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <div class="top">
+            <div>
+              <strong>${inv.customer || ''}</strong><br>
+              <small style="color:#888;">${inv.desc || ''} · $${(inv.total || 0).toFixed(2)}</small>
+            </div>
+            <span class="status ${inv.paid ? 'paid' : 'unpaid'}">${inv.paid ? 'Paid' : 'Unpaid'}</span>
+          </div>
+          <div class="actions">
+            <a href="preview.html?idx=${idx}">Preview</a>
+            <a href="edit-invoice.html?idx=${idx}">Edit</a>
+            <button onclick="togglePaid(${idx})" class="${inv.paid ? 'paid' : ''}">${inv.paid ? 'Unpaid' : 'Paid'}</button>
+            <button onclick="deleteInv(${idx})">Delete</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+    function togglePaid(idx) {
+      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+      invoices[idx].paid = !invoices[idx].paid;
+      localStorage.setItem('invoices', JSON.stringify(invoices));
+      render();
+    }
+    function deleteInv(idx) {
+      if (!confirm('Delete this invoice?')) return;
+      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+      invoices.splice(idx, 1);
+      localStorage.setItem('invoices', JSON.stringify(invoices));
+      render();
+    }
+    render();
+  </script>
+</body>
+</html>
