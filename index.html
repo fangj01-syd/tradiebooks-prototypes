@@ -124,6 +124,7 @@
     <h2>Unpaid invoices</h2>
     <div class="amount" id="unpaidAmount">$0</div>
     <div class="sub" id="unpaidCount">0 invoices</div>
+    <div class="sub" id="overdueInfo" style="color:#e65100; margin-top:2px;"></div>
   </div>
 
   <div class="stats">
@@ -159,6 +160,7 @@
     <a href="invoices.html"><div>📄</div>Invoices</a>
     <a href="receipts.html"><div>🧾</div>Receipts</a>
     <a href="bas.html"><div>📊</div>BAS</a>
+    <a href="customers.html"><div>👥</div>Clients</a>
     <a href="settings.html"><div>⚙️</div>More</a>
   </nav>
 
@@ -179,6 +181,14 @@
       document.getElementById('gstAmount').textContent = '$' + Math.round(netGST);
       document.getElementById('unpaidAmount').textContent = '$' + Math.round(unpaidTotal);
       document.getElementById('unpaidCount').textContent = unpaid.length + ' invoice' + (unpaid.length !== 1 ? 's' : '');
+      const today = new Date().toISOString().slice(0, 10);
+      const overdue = unpaid.filter(i => i.dueDate && i.dueDate < today);
+      const overdueEl = document.getElementById('overdueInfo');
+      if (overdue.length > 0) {
+        overdueEl.textContent = overdue.length + ' overdue';
+      } else {
+        overdueEl.textContent = '';
+      }
       const month = new Date().toISOString().slice(0, 7);
       const monthIncome = invoices.filter(i => (i.date || '').startsWith(month)).reduce((s, i) => s + (i.total || 0), 0);
       const monthExpenses = receipts.filter(r => (r.date || '').startsWith(month)).reduce((s, r) => s + (r.amount || 0), 0);
