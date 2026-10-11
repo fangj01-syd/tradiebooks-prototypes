@@ -81,6 +81,8 @@
   nav a.active { color: #1E3A2F; font-weight: 600; }
   nav a div { font-size: 22px; }
 </style>
+<script src="supabase-config.js"></script>
+<script src="account.js"></script>
 </head>
 <body>
   <header>Invoices <a href="invoice.html">+ New</a></header>
@@ -187,19 +189,21 @@
       });
     }
 
-    function duplicateInv(idx) {
+    async function duplicateInv(idx) {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       const original = invoices[idx];
       if (!original) return;
-      const copy = { ...original };
-      copy.id = Date.now();
-      copy.number = nextInvoiceNumber(invoices);
-      copy.paid = false;
-      copy.date = localDate();
-      delete copy.paidDate;
-      invoices.unshift(copy);
-      localStorage.setItem('invoices', JSON.stringify(invoices));
-      render();
+      const saved = await TradieCloud.commit(() => {
+        const copy = { ...original };
+        copy.id = Date.now();
+        copy.number = nextInvoiceNumber(invoices);
+        copy.paid = false;
+        copy.date = localDate();
+        delete copy.paidDate;
+        invoices.unshift(copy);
+        localStorage.setItem('invoices', JSON.stringify(invoices));
+      });
+      if (saved) render();
     }
 
     function openPayment(idx) {
@@ -211,32 +215,39 @@
       document.getElementById('paymentDate').value = validDate(invoice.paidDate) ? invoice.paidDate : localDate();
       paymentDialog.showModal();
     }
-    function savePayment() {
+    async function savePayment() {
       const date = document.getElementById('paymentDate').value;
       if (!validDate(date)) { alert('Enter a valid payment date'); return; }
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       if (!invoices[paymentIndex]) { paymentDialog.close(); return; }
-      invoices[paymentIndex].paid = true;
-      invoices[paymentIndex].paidDate = date;
-      localStorage.setItem('invoices', JSON.stringify(invoices));
+      const saved = await TradieCloud.commit(() => {
+        invoices[paymentIndex].paid = true;
+        invoices[paymentIndex].paidDate = date;
+        localStorage.setItem('invoices', JSON.stringify(invoices));
+      });
+      if (!saved) return;
       paymentDialog.close();
       paymentIndex = -1;
       render();
     }
-    function markUnpaid(idx) {
+    async function markUnpaid(idx) {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       if (!invoices[idx]) return;
-      invoices[idx].paid = false;
-      delete invoices[idx].paidDate;
-      localStorage.setItem('invoices', JSON.stringify(invoices));
-      render();
+      const saved = await TradieCloud.commit(() => {
+        invoices[idx].paid = false;
+        delete invoices[idx].paidDate;
+        localStorage.setItem('invoices', JSON.stringify(invoices));
+      });
+      if (saved) render();
     }
-    function deleteInv(idx) {
+    async function deleteInv(idx) {
       if (!confirm('Delete this invoice?')) return;
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
-      invoices.splice(idx, 1);
-      localStorage.setItem('invoices', JSON.stringify(invoices));
-      render();
+      const saved = await TradieCloud.commit(() => {
+        invoices.splice(idx, 1);
+        localStorage.setItem('invoices', JSON.stringify(invoices));
+      });
+      if (saved) render();
     }
     render();
   </script>

@@ -60,6 +60,8 @@
   .import-preview p { margin-bottom:10px; }
   .import-preview button { width:100%; padding:12px; border:0; border-radius:10px; background:#1E3A2F; color:white; font-size:15px; }
 </style>
+<script src="supabase-config.js"></script>
+<script src="account.js"></script>
 </head>
 <body>
   <header>More</header>
@@ -75,8 +77,12 @@
 
   <div class="section">
     <h3>Data</h3>
+    <div class="item" id="cloudAccount" style="display:none">
+      <div>Signed in as <strong id="accountIdentity"></strong></div>
+      <button type="button" onclick="TradieCloud.signOut()">Sign out</button>
+    </div>
   
-  <div style="margin: 8px 16px 16px; font-size: 13px; color: #888; line-height: 1.4;">
+  <div id="dataNote" style="margin: 8px 16px 16px; font-size: 13px; color: #888; line-height: 1.4;">
     Data is stored only in this browser. Export a backup regularly.
   </div>
 
@@ -114,8 +120,10 @@
   <script>
     let pendingBackup = null;
     document.getElementById('gstBasis').value = localStorage.getItem('gstBasis') === 'cash' ? 'cash' : 'noncash';
-    function saveBasis() {
-      localStorage.setItem('gstBasis', document.getElementById('gstBasis').value);
+    async function saveBasis() {
+      const previous = localStorage.getItem('gstBasis') === 'cash' ? 'cash' : 'noncash';
+      const saved = await TradieCloud.commit(() => localStorage.setItem('gstBasis', document.getElementById('gstBasis').value));
+      if (!saved) document.getElementById('gstBasis').value = previous;
     }
     function exportData() {
       const data = {
@@ -174,38 +182,42 @@
       reader.onerror = () => { alert('Could not read backup file'); input.value = ''; };
       reader.readAsText(file);
     }
-    function confirmImport() {
+    async function confirmImport() {
       if (!pendingBackup) return;
-      const keys = ['invoices', 'receipts', 'lastInvoiceNumber', 'gstBasis'];
-      const before = Object.fromEntries(keys.map(key => [key, localStorage.getItem(key)]));
       try {
-        localStorage.setItem('invoices', JSON.stringify(pendingBackup.invoices));
-        localStorage.setItem('receipts', JSON.stringify(pendingBackup.receipts));
-        const highest = pendingBackup.invoices.reduce((max, inv) => {
-          const match = /^INV-(\d+)$/.exec(inv.number || '');
-          return match ? Math.max(max, Number(match[1])) : max;
-        }, 1000);
-        localStorage.setItem('lastInvoiceNumber', String(Math.max(highest, pendingBackup.lastInvoiceNumber || 1000)));
-        localStorage.setItem('gstBasis', pendingBackup.gstBasis === 'cash' ? 'cash' : 'noncash');
+        const saved = await TradieCloud.commit(() => {
+          localStorage.setItem('invoices', JSON.stringify(pendingBackup.invoices));
+          localStorage.setItem('receipts', JSON.stringify(pendingBackup.receipts));
+          const highest = pendingBackup.invoices.reduce((max, inv) => {
+            const match = /^INV-(\d+)$/.exec(inv.number || '');
+            return match ? Math.max(max, Number(match[1])) : max;
+          }, 1000);
+          localStorage.setItem('lastInvoiceNumber', String(Math.max(highest, pendingBackup.lastInvoiceNumber || 1000)));
+          localStorage.setItem('gstBasis', pendingBackup.gstBasis === 'cash' ? 'cash' : 'noncash');
+        });
+        if (!saved) return;
         pendingBackup = null;
         alert('Backup imported');
         location.reload();
       } catch {
-        let restored = true;
-        keys.forEach(key => {
-          try { if (before[key] === null) localStorage.removeItem(key); else localStorage.setItem(key, before[key]); } catch { restored = false; }
-        });
-        alert(restored ? 'Import failed. Your previous data was restored.' : 'Import failed. Some previous data could not be restored; use your exported backup.');
+        alert('Import failed. Your previous data was restored.');
       }
     }
-    function clearAll() {
+    async function clearAll() {
       if (!confirm('Delete all data?')) return;
-      localStorage.removeItem('invoices');
-      localStorage.removeItem('receipts');
-      localStorage.removeItem('lastInvoiceNumber');
-      localStorage.removeItem('gstBasis');
+      const saved = await TradieCloud.commit(() => {
+        localStorage.removeItem('invoices');
+        localStorage.removeItem('receipts');
+        localStorage.removeItem('lastInvoiceNumber');
+        localStorage.removeItem('gstBasis');
+      });
+      if (!saved) return;
       alert('Cleared');
       location.href = 'index.html';
+    }
+    if (TradieCloud.enabled) {
+      document.getElementById('cloudAccount').style.display = 'block';
+      document.getElementById('dataNote').textContent = 'Your book is saved to your account and cached in this browser. Export a backup regularly.';
     }
   </script>
 </body>

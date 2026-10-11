@@ -60,6 +60,8 @@
     font-weight: 600;
   }
 </style>
+<script src="supabase-config.js"></script>
+<script src="account.js"></script>
 </head>
 <body>
   <header>
@@ -125,8 +127,9 @@
     }
 
     if (!inv) {
-      alert('Invoice not found');
-      location.href = 'invoices.html';
+      const missingInvoice = () => { alert('Invoice not found'); location.href = 'invoices.html'; };
+      if (TradieCloud.enabled) document.addEventListener('tradiebooks:ready', missingInvoice, { once: true });
+      else missingInvoice();
     } else {
       document.getElementById('customer').value = inv.customer || '';
       document.getElementById('abn').value = inv.abn || '';
@@ -151,7 +154,7 @@
       document.getElementById('total').textContent = total.toFixed(2);
     }
 
-    function save() {
+    async function save() {
       const customer = document.getElementById('customer').value.trim();
       if (!inv || !customer) {
         alert('Please enter a customer');
@@ -178,15 +181,17 @@
         base.setDate(base.getDate() + Number(terms));
         dueDate = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
       }
-      Object.assign(inv, {
-        customer, lines, subtotal, gst, total: subtotal + gst, terms, dueDate,
-        notes: document.getElementById('notes').value.trim(),
-        abn: document.getElementById('abn').value.trim()
+      const saved = await TradieCloud.commit(() => {
+        Object.assign(inv, {
+          customer, lines, subtotal, gst, total: subtotal + gst, terms, dueDate,
+          notes: document.getElementById('notes').value.trim(),
+          abn: document.getElementById('abn').value.trim()
+        });
+        delete inv.desc;
+        delete inv.amount;
+        localStorage.setItem('invoices', JSON.stringify(invoices));
       });
-      delete inv.desc;
-      delete inv.amount;
-      localStorage.setItem('invoices', JSON.stringify(invoices));
-      location.href = 'invoices.html';
+      if (saved) location.href = 'invoices.html';
     }
   </script>
 </body>

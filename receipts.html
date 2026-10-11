@@ -67,6 +67,8 @@
   nav a.active { color: #1E3A2F; font-weight: 600; }
   nav a div { font-size: 20px; }
 </style>
+<script src="supabase-config.js"></script>
+<script src="account.js"></script>
 </head>
 <body>
   <header>Receipts <a href="receipt.html">+ Add</a></header>
@@ -119,12 +121,14 @@
       });
     }
 
-    function deleteRec(idx) {
+    async function deleteRec(idx) {
       if (!confirm('Delete this receipt?')) return;
       const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
-      receipts.splice(idx, 1);
-      localStorage.setItem('receipts', JSON.stringify(receipts));
-      render();
+      const saved = await TradieCloud.commit(() => {
+        receipts.splice(idx, 1);
+        localStorage.setItem('receipts', JSON.stringify(receipts));
+      });
+      if (saved) render();
     }
 
     render();

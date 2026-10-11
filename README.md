@@ -13,9 +13,18 @@ Mobile-first web prototype for Australian solo tradies.
 - Paid invoices without payment dates are flagged and excluded from cash-basis sales estimates
 - Local backup export and validated import with a replacement preview
 - One-click accountant ZIP export with invoice, item, payment, receipt, quarterly GST and review CSVs
-- Data stored in browser (localStorage)
+- Optional email-code accounts and cloud book recovery through Supabase
+- Existing browser books can be backed up, migrated and checked by record counts and totals
 
-The accountant export is generated locally in the browser and downloads one ZIP. It includes all recorded invoices and receipts, a selected-quarter summary, quarterly GST estimates, a review list and a JSON backup. No data is sent by the site.
+The accountant export is generated locally in the browser and downloads one ZIP. It includes all recorded invoices and receipts, a selected-quarter summary, quarterly GST estimates, a review list and a JSON backup. When cloud accounts are enabled, book data is also sent to the user's Supabase project.
+
+## Set up cloud accounts
+1. Create a Supabase project. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). This creates a per-user book table, row level security policies and an atomic revision-checked save function.
+2. In **Authentication > Providers > Email**, enable email sign-in. In the **Magic Link email template**, include `{{ .Token }}` so the email contains a six-digit code. The sign-in page uses email OTP verification, allowing migration in the same browser as the old local book.
+3. In [`supabase-config.js`](supabase-config.js), set the project's HTTPS URL and **publishable key** (or legacy anon key). Never put a service role key in browser code. Commit and deploy this file only after the SQL and email template are ready.
+4. Test with two separate email accounts. Each account should see only its own book. On the original browser, download the offered backup before uploading the old local book. On a second device, sign in with the same email and verify the invoice and receipt counts and totals.
+
+Until the project URL and key are configured, the current local-only app continues to work. Once configured, every page requires sign-in. On each page the cloud book is loaded before it is shown, and edits are confirmed only after the cloud save succeeds. A revision check rejects a stale device's save instead of silently overwriting a newer book. This first version stores one JSON book per user; it does not merge simultaneous edits or support offline edits. Keep exporting backups regularly.
 
 ## BAS estimate limits
 Cash-basis calculations use the date a full invoice payment was recorded. Partial payments are not supported. Receipt dates are used for purchase GST in both modes. Check GST credit eligibility and accounting treatment before lodging.

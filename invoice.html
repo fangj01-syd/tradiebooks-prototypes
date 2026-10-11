@@ -69,6 +69,8 @@
   }
   .success { display: none; text-align: center; padding: 70px 24px; }
 </style>
+<script src="supabase-config.js"></script>
+<script src="account.js"></script>
 </head>
 <body>
   <header>
@@ -169,7 +171,7 @@
       if (val) document.getElementById('customer').value = val;
     }
 
-    function save() {
+    async function save() {
       const customer = document.getElementById('customer').value.trim();
       if (!customer) { alert('Please enter customer'); return; }
 
@@ -190,9 +192,6 @@
       const gst = subtotal * 0.1;
       const total = subtotal + gst;
 
-      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
-      const invNum = nextInvoiceNumber(invoices);
-
       const terms = document.getElementById('terms').value;
       let dueDate = '';
       if (terms !== 'due') {
@@ -201,22 +200,17 @@
         dueDate = localDate(d);
       }
 
-      invoices.unshift({
-        id: Date.now(),
-        number: invNum,
-        customer,
-        lines,
-        subtotal,
-        gst,
-        total,
-        terms,
-        dueDate,
-        notes: document.getElementById('notes').value.trim(),
-        abn: document.getElementById('abn').value.trim(),
-        paid: false,
-        date: localDate()
+      const saved = await TradieCloud.commit(() => {
+        const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+        const invNum = nextInvoiceNumber(invoices);
+        invoices.unshift({
+          id: Date.now(), number: invNum, customer, lines, subtotal, gst, total,
+          terms, dueDate, notes: document.getElementById('notes').value.trim(),
+          abn: document.getElementById('abn').value.trim(), paid: false, date: localDate()
+        });
+        localStorage.setItem('invoices', JSON.stringify(invoices));
       });
-      localStorage.setItem('invoices', JSON.stringify(invoices));
+      if (!saved) return;
       document.getElementById('formView').style.display = 'none';
       document.getElementById('successView').style.display = 'block';
     }

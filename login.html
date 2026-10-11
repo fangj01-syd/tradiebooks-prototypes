@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in - TradieBooks</title>
+<style>
+* { box-sizing: border-box; }
+body { margin:0; min-height:100vh; padding:36px 18px; background:#f4f7f3; color:#172b22; font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { max-width:430px; margin:0 auto; }
+h1 { font-size:28px; margin:18px 0 4px; }
+h2 { font-size:20px; margin:0 0 10px; }
+p { margin:0 0 16px; color:#536257; }
+.card { margin-top:24px; padding:22px; background:#fff; border-radius:18px; box-shadow:0 3px 18px #172b2210; }
+label { display:block; font-weight:600; margin:10px 0 6px; font-size:14px; }
+input { width:100%; padding:14px; font-size:16px; border:1px solid #bac9bd; border-radius:10px; }
+button { width:100%; border:0; border-radius:11px; padding:14px; font:600 16px/1.2 inherit; background:#163028; color:#fff; cursor:pointer; margin-top:12px; }
+button.secondary { background:#e7eee8; color:#163028; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+small { display:block; color:#66746a; margin-top:12px; }
+#status { min-height:24px; margin-top:12px; color:#a23e2b; }
+.hidden { display:none; }
+.stat { display:flex; justify-content:space-between; border-bottom:1px solid #e7eee8; padding:7px 0; }
+.stat strong { color:#163028; }
+</style>
+<script src="supabase-config.js"></script>
+<script src="account.js"></script>
+</head>
+<body>
+<main>
+  <div style="font-weight:800;font-size:22px">Tradie<span style="color:#39a66c">Books</span></div>
+  <h1>Keep your books with your account</h1>
+  <p>Sign in with an email code to open the same book on another device.</p>
+  <section id="setup" class="card hidden"><h2>Cloud sign-in is being set up</h2><p>TradieBooks still works in this browser. The owner needs to connect a Supabase project before cloud accounts can be used.</p><a href="index.html">Back to TradieBooks</a></section>
+  <section id="emailStep" class="card hidden">
+    <h2>Sign in or create an account</h2>
+    <form id="emailForm"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required><button type="submit">Send sign-in code</button></form>
+    <small>We'll email a one-time code. No password needed.</small>
+  </section>
+  <section id="codeStep" class="card hidden">
+    <h2>Enter your email code</h2>
+    <p>Check <strong id="sentTo"></strong> for a 6-digit code.</p>
+    <form id="codeForm"><label for="code">Code</label><input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required><button type="submit">Open my book</button></form>
+    <button id="changeEmail" class="secondary" type="button">Use another email</button>
+  </section>
+  <section id="migrationStep" class="card hidden">
+    <h2>Move this browser's book?</h2>
+    <p id="migrationText"></p>
+    <div class="stat"><span>Invoices</span><strong id="invoiceCount"></strong></div>
+    <div class="stat"><span>Invoice total</span><strong id="invoiceTotal"></strong></div>
+    <div class="stat"><span>Receipts</span><strong id="receiptCount"></strong></div>
+    <div class="stat"><span>Receipt total</span><strong id="receiptTotal"></strong></div>
+    <button id="backupButton" type="button">1. Download backup first</button>
+    <button id="uploadButton" type="button" disabled>2. Upload and verify my book</button>
+    <button id="openCloudButton" type="button" class="secondary" disabled>Open existing cloud book instead</button>
+    <small>Upload checks the record counts and totals before completing. Your local book stays here if it fails.</small>
+  </section>
+  <p id="status" role="status" aria-live="polite"></p>
+</main>
+<script src="login.js"></script>
+</body>
+</html>
