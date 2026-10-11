@@ -30,17 +30,17 @@ small { display:block; color:#66746a; margin-top:12px; }
 <main>
   <div style="font-weight:800;font-size:22px">Tradie<span style="color:#39a66c">Books</span></div>
   <h1>Keep your books with your account</h1>
-  <p>Sign in with an email code to open the same book on another device.</p>
+  <p>Sign in by email to open the same book on another device.</p>
   <section id="setup" class="card hidden"><h2>Cloud sign-in is being set up</h2><p>TradieBooks still works in this browser. The owner needs to connect a Supabase project before cloud accounts can be used.</p><a href="index.html">Back to TradieBooks</a></section>
   <section id="emailStep" class="card hidden">
     <h2>Sign in or create an account</h2>
-    <form id="emailForm"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required><button type="submit">Send sign-in code</button></form>
-    <small>We'll email a one-time code. No password needed.</small>
+    <form id="emailForm"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required><button type="submit">Send sign-in email</button></form>
+    <small>We'll email a sign-in link. No password needed.</small>
   </section>
   <section id="codeStep" class="card hidden">
-    <h2>Enter your email code</h2>
-    <p>Check <strong id="sentTo"></strong> for a 6-digit code.</p>
-    <form id="codeForm"><label for="code">Code</label><input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required><button type="submit">Open my book</button></form>
+    <h2>Check your email</h2>
+    <p>Open the sign-in link sent to <strong id="sentTo"></strong> in this browser. If your email contains a 6-digit code instead, enter it below.</p>
+    <form id="codeForm"><label for="code">Code (if provided)</label><input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required><button type="submit">Open my book with code</button></form>
     <button id="changeEmail" class="secondary" type="button">Use another email</button>
   </section>
   <section id="migrationStep" class="card hidden">

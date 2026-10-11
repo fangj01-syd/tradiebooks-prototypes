@@ -84,19 +84,24 @@
     try {
       await cloud.loadSdk();
       const { data, error } = await cloud.client.auth.getUser();
-      if (error || !data.user) { show('emailStep'); return; }
+      if (error || !data.user) {
+        show('emailStep');
+        const callbackError = new URLSearchParams(location.hash.slice(1)).get('error_description');
+        if (callbackError) status(callbackError, true);
+        return;
+      }
       await afterSignIn(data.user);
     } catch (error) { show('emailStep'); status('Could not check your account: ' + error.message, true); }
   }
   $('emailForm').addEventListener('submit', async event => {
     event.preventDefault();
     email = $('email').value.trim().toLowerCase();
-    status('Sending code...');
+    status('Sending sign-in email...');
     const { error } = await cloud.client.auth.signInWithOtp({ email });
     if (error) { status(error.message, true); return; }
     $('sentTo').textContent = email;
     show('codeStep');
-    status('Code sent. Check your inbox.');
+    status('Email sent. Open the link in this browser to keep access to any local book here.');
   });
   $('codeForm').addEventListener('submit', async event => {
     event.preventDefault();
