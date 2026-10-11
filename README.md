@@ -20,7 +20,7 @@ The accountant export is generated locally in the browser and downloads one ZIP.
 
 ## Set up cloud accounts
 1. Create a Supabase project. In **SQL Editor**, run [`supabase/schema.sql`](supabase/schema.sql). This creates a per-user book table, row level security policies and an atomic revision-checked save function.
-2. In **Authentication > Providers > Email**, enable email sign-in. In the **Magic Link email template**, include `{{ .Token }}` so the email contains a six-digit code. The sign-in page uses email OTP verification, allowing migration in the same browser as the old local book.
+2. In **Authentication > Providers > Email**, enable email sign-in. In **Authentication > Email Templates**, add `{{ .Token }}` to both the **Confirm signup** and **Magic Link** templates and save each one. Supabase can use the signup template for a new email and the magic-link template for a returning email. The sign-in page verifies the emailed six-digit code, allowing migration in the same browser as the old local book. Supabase's default email service only delivers to authorized project team addresses; configure custom SMTP before inviting testers who are not on the team.
 3. In [`supabase-config.js`](supabase-config.js), set the project's HTTPS URL and **publishable key** (or legacy anon key). Never put a service role key in browser code. Commit and deploy this file only after the SQL and email template are ready.
 4. Test with two separate email accounts. Each account should see only its own book. On the original browser, download the offered backup before uploading the old local book. On a second device, sign in with the same email and verify the invoice and receipt counts and totals.
 
