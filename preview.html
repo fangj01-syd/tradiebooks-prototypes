@@ -43,6 +43,11 @@
     font-size: 16px;
     font-weight: 600;
   }
+  @media print {
+    body { background: white; padding: 0; max-width: none; }
+    header, .btn { display: none !important; }
+    .preview { box-shadow: none; border-radius: 0; padding: 20px; }
+  }
 </style>
 </head>
 <body>
@@ -65,7 +70,7 @@
     <div class="total" id="total"></div>
   </div>
 
-  <button class="btn" onclick="window.print()">Print / Save as PDF</button>
+  <button class="btn" onclick="window.print()">Export PDF</button>
   <button class="btn" style="background:white; color:#1E3A2F; border:1.5px solid #1E3A2F; margin-top:10px;" onclick="copyEmail()">Copy email draft</button>
 
   <script>
@@ -84,9 +89,9 @@
       if (inv.abn) { document.getElementById('abn').textContent = inv.abn; document.getElementById('abnRow').style.display = 'flex'; }
       if (inv.dueDate) { document.getElementById('dueDate').textContent = inv.dueDate; document.getElementById('dueRow').style.display = 'flex'; }
       if (inv.notes) { document.getElementById('notes').textContent = inv.notes; document.getElementById('notesRow').style.display = 'flex'; }
-      document.getElementById('amount').textContent = '$' + inv.amount.toFixed(2);
-      document.getElementById('gst').textContent = '$' + inv.gst.toFixed(2);
-      document.getElementById('total').textContent = 'Total: $' + inv.total.toFixed(2);
+      document.getElementById('amount').textContent = '$' + (inv.amount || inv.subtotal || 0).toFixed(2);
+      document.getElementById('gst').textContent = '$' + (inv.gst || 0).toFixed(2);
+      document.getElementById('total').textContent = 'Total: $' + (inv.total || 0).toFixed(2);
     }
 
     function copyEmail() {
