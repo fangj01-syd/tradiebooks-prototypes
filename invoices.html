@@ -75,6 +75,11 @@
 <body>
   <header>Invoices <a href="invoice.html">+ New</a></header>
   <input type="text" class="search" id="search" placeholder="Search..." oninput="render()">
+  <div style="display:flex; gap:8px; margin:0 16px 8px; font-size:13px;">
+    <button onclick="setFilter('all')" id="fAll" style="padding:6px 12px; border-radius:16px; border:1px solid #ddd; background:#1E3A2F; color:white;">All</button>
+    <button onclick="setFilter('unpaid')" id="fUnpaid" style="padding:6px 12px; border-radius:16px; border:1px solid #ddd; background:white;">Unpaid</button>
+    <button onclick="setFilter('paid')" id="fPaid" style="padding:6px 12px; border-radius:16px; border:1px solid #ddd; background:white;">Paid</button>
+  </div>
   <div id="list"></div>
   <nav>
     <a href="index.html"><div>🏠</div>Home</a>
@@ -84,15 +89,29 @@
     <a href="settings.html"><div>⚙️</div>More</a>
   </nav>
   <script>
+    let currentFilter = 'all';
+    function setFilter(f) {
+      currentFilter = f;
+      document.getElementById('fAll').style.background = f === 'all' ? '#1E3A2F' : 'white';
+      document.getElementById('fAll').style.color = f === 'all' ? 'white' : '#1c211c';
+      document.getElementById('fUnpaid').style.background = f === 'unpaid' ? '#1E3A2F' : 'white';
+      document.getElementById('fUnpaid').style.color = f === 'unpaid' ? 'white' : '#1c211c';
+      document.getElementById('fPaid').style.background = f === 'paid' ? '#1E3A2F' : 'white';
+      document.getElementById('fPaid').style.color = f === 'paid' ? 'white' : '#1c211c';
+      render();
+    }
+
     function render() {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       const q = (document.getElementById('search').value || '').toLowerCase();
-      const filtered = invoices.filter(inv =>
-        (inv.customer || '').toLowerCase().includes(q) || (inv.desc || '').toLowerCase().includes(q)
-      );
+      const filtered = invoices.filter(inv => {
+        const matchSearch = (inv.customer || '').toLowerCase().includes(q) || (inv.desc || '').toLowerCase().includes(q);
+        const matchFilter = currentFilter === 'all' || (currentFilter === 'paid' && inv.paid) || (currentFilter === 'unpaid' && !inv.paid);
+        return matchSearch && matchFilter;
+      });
       const list = document.getElementById('list');
       if (filtered.length === 0) {
-        list.innerHTML = '<div class="empty">' + (invoices.length === 0 ? 'No invoices yet' : 'No matches') + '</div>';
+        list.innerHTML = '<div class="empty">' + (invoices.length === 0 ? 'No invoices yet<br><small>Tap + New to create one</small>' : 'No matches') + '</div>';
         return;
       }
       list.innerHTML = '';
@@ -103,7 +122,7 @@
         div.innerHTML = `
           <div class="top">
             <div>
-              <strong>${inv.customer || ''}</strong><br>
+              <strong>${inv.number || ''} · ${inv.customer || ''}</strong><br>
               <small style="color:#888;">${inv.desc || ''} · $${(inv.total || 0).toFixed(2)}</small>
             </div>
             <span class="status ${inv.paid ? 'paid' : 'unpaid'}">${inv.paid ? 'Paid' : 'Unpaid'}</span>
@@ -121,6 +140,8 @@
     function togglePaid(idx) {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       invoices[idx].paid = !invoices[idx].paid;
+      if (invoices[idx].paid) invoices[idx].paidDate = new Date().toISOString().slice(0, 10);
+      else delete invoices[idx].paidDate;
       localStorage.setItem('invoices', JSON.stringify(invoices));
       render();
     }
