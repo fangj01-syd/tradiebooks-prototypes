@@ -89,6 +89,23 @@
     <a href="bas.html"><div>📊</div>BAS</a>
     <a href="settings.html"><div>⚙️</div>More</a>
   </nav>
+
+  <button onclick="exportBackup()" style="position:fixed; bottom:76px; right:16px; background:#163028; color:white; border:none; border-radius:20px; padding:8px 14px; font-size:12px; z-index:10;">Export</button>
+  <script>
+    function exportBackup() {
+      const data = {
+        invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
+        receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
+        exported: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tradiebooks-backup.json';
+      a.click();
+    }
+  </script>
+
   <script>
     let currentFilter = 'all';
     function setFilter(f) {
