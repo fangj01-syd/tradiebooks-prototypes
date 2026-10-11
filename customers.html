@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Customers - TradieBooks</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f6f4;
+    color: #1c211c;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 76px;
+  }
+  header {
+    background: white;
+    padding: 16px 20px;
+    font-size: 18px;
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+  }
+  .item {
+    background: white;
+    margin: 12px 16px;
+    padding: 16px;
+    border-radius: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .empty { text-align: center; padding: 60px 20px; color: #888; }
+  nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px; background: white;
+    display: flex; border-top: 1px solid #eee; padding: 6px 0 10px;
+  }
+  nav a { flex: 1; text-align: center; text-decoration: none; color: #aaa; font-size: 10px; }
+  nav a.active { color: #1E3A2F; font-weight: 600; }
+  nav a div { font-size: 22px; }
+</style>
+</head>
+<body>
+  <header>Customers</header>
+  <div id="list"></div>
+  <nav>
+    <a href="index.html"><div>🏠</div>Home</a>
+    <a href="invoices.html"><div>📄</div>Invoices</a>
+    <a href="receipts.html"><div>🧾</div>Receipts</a>
+    <a href="bas.html"><div>📊</div>BAS</a>
+    <a href="customers.html" class="active"><div>👥</div>Clients</a>
+  </nav>
+  <script>
+    const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+    const customers = {};
+    invoices.forEach(inv => {
+      if (!inv.customer) return;
+      if (!customers[inv.customer]) customers[inv.customer] = { total: 0, count: 0, unpaid: 0 };
+      customers[inv.customer].count++;
+      customers[inv.customer].total += inv.total || 0;
+      if (!inv.paid) customers[inv.customer].unpaid += inv.total || 0;
+    });
+    const list = document.getElementById('list');
+    const names = Object.keys(customers);
+    if (names.length === 0) {
+      list.innerHTML = '<div class="empty">No customers yet.<br>Create an invoice to add one.</div>';
+    } else {
+      names.sort().forEach(name => {
+        const c = customers[name];
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <div>
+            <strong>${name}</strong><br>
+            <small style="color:#888;">${c.count} invoice${c.count>1?'s':''}</small>
+          </div>
+          <div style="text-align:right;">
+            <div>$${Math.round(c.total)}</div>
+            ${c.unpaid > 0 ? `<small style="color:#e65100;">$${Math.round(c.unpaid)} unpaid</small>` : ''}
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
