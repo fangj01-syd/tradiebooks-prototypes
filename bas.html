@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BAS - TradieBooks</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #f7f9f7 0%, #eef2ee 100%);
+    color: #1a1f1a;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  header {
+    background: white;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  }
+  header a { text-decoration: none; color: #163028; font-size: 22px; margin-right: 8px; }
+  header h1 { font-size: 17px; font-weight: 600; }
+  .card {
+    background: white;
+    margin: 16px;
+    border-radius: 20px;
+    padding: 8px 20px;
+    box-shadow: 0 4px 16px rgba(22, 48, 40, 0.06);
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f2f0;
+    font-size: 15px;
+  }
+  .row:last-child { border: none; }
+  .label { color: #5a655a; }
+  .value { font-weight: 600; color: #163028; }
+  .highlight {
+    background: linear-gradient(135deg, #163028 0%, #1e4034 100%);
+    color: white;
+    margin: 16px;
+    border-radius: 20px;
+    padding: 28px 20px;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(22, 48, 40, 0.25);
+  }
+  .highlight .amount { font-size: 40px; font-weight: 700; margin: 8px 0; letter-spacing: -1px; }
+  .btn {
+    display: block;
+    width: calc(100% - 32px);
+    margin: 12px 16px;
+    padding: 15px;
+    background: white;
+    color: #163028;
+    border: 1.5px solid #163028;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px; background: white;
+    display: flex; border-top: 1px solid #eee; padding: 8px 0 12px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+  }
+  nav a { flex: 1; text-align: center; text-decoration: none; color: #b0b8b0; font-size: 10px; }
+  nav a.active { color: #163028; font-weight: 600; }
+  nav a div { font-size: 22px; }
+</style>
+</head>
+<body>
+  <header>
+    <a href="index.html">←</a>
+    <h1>BAS this quarter</h1>
+  </header>
+
+  <div class="card">
+    <div class="row"><span class="label">G1 Total sales</span><span class="value" id="g1">$0</span></div>
+    <div class="row"><span class="label">1A GST on sales</span><span class="value" id="a1">$0</span></div>
+    <div class="row"><span class="label">1B GST on purchases</span><span class="value" id="b1">$0</span></div>
+  </div>
+
+  <div class="highlight">
+    <div style="font-size:14px; opacity:0.85;">GST to pay</div>
+    <div class="amount" id="net">$0</div>
+    <div style="font-size:12px; opacity:0.7;">1A − 1B</div>
+  </div>
+
+  <button class="btn" onclick="exportBAS()">Copy for accountant</button>
+
+  <nav>
+    <a href="index.html"><div>🏠</div>Home</a>
+    <a href="invoices.html"><div>📄</div>Invoices</a>
+    <a href="receipts.html"><div>🧾</div>Receipts</a>
+    <a href="bas.html" class="active"><div>📊</div>BAS</a>
+    <a href="settings.html"><div>⚙️</div>More</a>
+  </nav>
+
+  <script>
+    const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+    const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
+    const totalSales = invoices.reduce((s, i) => s + (i.total || 0), 0);
+    const gstSales = invoices.reduce((s, i) => s + (i.gst || 0), 0);
+    const gstPurchases = receipts.reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
+    const net = Math.max(0, gstSales - gstPurchases);
+    document.getElementById('g1').textContent = '$' + Math.round(totalSales);
+    document.getElementById('a1').textContent = '$' + Math.round(gstSales);
+    document.getElementById('b1').textContent = '$' + Math.round(gstPurchases);
+    document.getElementById('net').textContent = '$' + Math.round(net);
+    function exportBAS() {
+      const text = `TradieBooks BAS Summary\n\nG1 Total sales: $${totalSales.toFixed(2)}\n1A GST on sales: $${gstSales.toFixed(2)}\n1B GST on purchases: $${gstPurchases.toFixed(2)}\nGST to pay: $${net.toFixed(2)}`;
+      navigator.clipboard.writeText(text).then(() => alert('Copied')).catch(() => alert(text));
+    }
+  </script>
+</body>
+</html>
