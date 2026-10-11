@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Receipts - TradieBooks</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f6f4;
+    color: #1c211c;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 70px;
+  }
+  header {
+    background: white;
+    padding: 16px 20px;
+    font-size: 20px;
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header a { font-size: 14px; color: #1E3A2F; text-decoration: none; font-weight: 600; }
+  .search {
+    margin: 12px 16px;
+    padding: 12px 14px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 16px;
+    width: calc(100% - 32px);
+  }
+  .item {
+    background: white;
+    margin: 12px 16px;
+    padding: 16px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .item button {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .empty { text-align: center; padding: 60px 20px; color: #888; }
+  nav {
+    position: fixed;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: white; display: flex; border-top: 1px solid #eee;
+    padding: 8px 0 12px;
+  }
+  nav a { flex: 1; text-align: center; text-decoration: none; color: #888; font-size: 11px; }
+  nav a.active { color: #1E3A2F; font-weight: 600; }
+  nav a div { font-size: 20px; }
+</style>
+</head>
+<body>
+  <header>Receipts <a href="receipt.html">+ Add</a></header>
+  <input type="text" class="search" id="search" placeholder="Search merchant..." oninput="render()">
+  <div id="list"></div>
+  <nav>
+    <a href="index.html"><div>🏠</div>Home</a>
+    <a href="invoices.html"><div>📄</div>Invoices</a>
+    <a href="receipts.html" class="active"><div>🧾</div>Receipts</a>
+    <a href="bas.html"><div>📊</div>BAS</a>
+    <a href="settings.html"><div>⚙️</div>More</a>
+  </nav>
+  <script>
+    function render() {
+      const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
+      const q = document.getElementById('search').value.toLowerCase();
+      const filtered = receipts.filter(r => r.merchant.toLowerCase().includes(q));
+      const list = document.getElementById('list');
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty">' + (receipts.length === 0 ? 'No receipts yet.<br>Add your first one.' : 'No matches found.') + '</div>';
+        return;
+      }
+      list.innerHTML = '';
+      filtered.forEach(r => {
+        const idx = receipts.indexOf(r);
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <div><strong>${r.merchant}</strong><br><small>${r.category}</small></div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span>$${r.amount.toFixed(2)}</span>
+            <button onclick="deleteRec(${idx})">Delete</button>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function deleteRec(idx) {
+      if (!confirm('Delete this receipt?')) return;
+      const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
+      receipts.splice(idx, 1);
+      localStorage.setItem('receipts', JSON.stringify(receipts));
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
