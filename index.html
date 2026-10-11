@@ -66,12 +66,16 @@
   nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 430px; background: white;
-    display: flex; border-top: 1px solid #eee; padding: 8px 0 12px;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+    display: flex; border-top: 1px solid #eee; padding: 6px 0 14px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
   }
-  nav a { flex: 1; text-align: center; text-decoration: none; color: #b0b8b0; font-size: 10px; min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  nav a {
+    flex: 1; text-align: center; text-decoration: none; color: #9aa39a;
+    font-size: 10px; min-height: 52px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2px;
+  }
   nav a.active { color: #163028; font-weight: 600; }
-  nav a div { font-size: 22px; margin-bottom: 2px; }
+  nav a div { font-size: 20px; }
 
   .notice {
     background: #fff8e6;
