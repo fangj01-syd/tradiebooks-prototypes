@@ -96,6 +96,7 @@
       const data = {
         invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
         receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
+        lastInvoiceNumber: Number(localStorage.getItem('lastInvoiceNumber')) || 1000,
         exported: new Date().toISOString()
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -106,6 +107,7 @@
     }
   </script>
 
+  <script src="invoice-utils.js"></script>
   <script>
     let currentFilter = 'all';
     function setFilter(f) {
@@ -168,7 +170,7 @@
       if (!original) return;
       const copy = { ...original };
       copy.id = Date.now();
-      copy.number = 'INV-' + String(invoices.length + 1001).padStart(4, '0');
+      copy.number = nextInvoiceNumber(invoices);
       copy.paid = false;
       copy.date = new Date().toISOString().slice(0, 10);
       delete copy.paidDate;

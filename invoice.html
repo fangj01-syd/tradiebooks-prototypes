@@ -129,6 +129,7 @@
     <a href="settings.html" style="flex:1; text-align:center; text-decoration:none; color:#aaa; font-size:10px;"><div style="font-size:22px;">⚙️</div>More</a>
   </nav>
 
+  <script src="invoice-utils.js"></script>
   <script>
     let lineCount = 0;
 
@@ -140,8 +141,8 @@
       div.innerHTML = `
         <input type="text" placeholder="Description" class="desc" oninput="calc()">
         <div style="display:flex; gap:8px;">
-          <input type="number" placeholder="Qty" class="qty" value="1" min="1" oninput="calc()" style="width:70px;">
-          <input type="number" placeholder="Price" class="price" inputmode="decimal" oninput="calc()" style="flex:1;">
+          <input type="number" placeholder="Qty" class="qty" value="1" min="0.01" step="any" inputmode="decimal" oninput="calc()" style="width:70px;">
+          <input type="number" placeholder="Price" class="price" min="0.01" step="any" inputmode="decimal" oninput="calc()" style="flex:1;">
         </div>
         <button class="remove-line" onclick="this.parentElement.remove(); calc();">Remove</button>
       `;
@@ -151,9 +152,9 @@
     function calc() {
       let subtotal = 0;
       document.querySelectorAll('.line-item').forEach(el => {
-        const qty = parseFloat(el.querySelector('.qty').value) || 0;
-        const price = parseFloat(el.querySelector('.price').value) || 0;
-        subtotal += qty * price;
+        const qty = Number(el.querySelector('.qty').value);
+        const price = Number(el.querySelector('.price').value);
+        if (qty > 0 && price > 0 && Number.isFinite(qty * price)) subtotal += qty * price;
       });
       const gst = subtotal * 0.1;
       const total = subtotal + gst;
@@ -172,14 +173,16 @@
       if (!customer) { alert('Please enter customer'); return; }
 
       const lines = [];
-      document.querySelectorAll('.line-item').forEach(el => {
+      for (const el of document.querySelectorAll('.line-item')) {
         const desc = el.querySelector('.desc').value.trim();
-        const qty = parseFloat(el.querySelector('.qty').value) || 0;
-        const price = parseFloat(el.querySelector('.price').value) || 0;
-        if (desc && qty > 0 && price > 0) {
-          lines.push({ desc, qty, price, amount: qty * price });
+        const qty = Number(el.querySelector('.qty').value);
+        const price = Number(el.querySelector('.price').value);
+        if (!desc || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price) || price <= 0 || !Number.isFinite(qty * price)) {
+          alert('Complete every line item with a description, positive quantity and price');
+          return;
         }
-      });
+        lines.push({ desc, qty, price, amount: qty * price });
+      }
       if (lines.length === 0) { alert('Please add at least one line item'); return; }
 
       const subtotal = lines.reduce((s, l) => s + l.amount, 0);
@@ -187,7 +190,7 @@
       const total = subtotal + gst;
 
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
-      const invNum = 'INV-' + String(invoices.length + 1001).padStart(4, '0');
+      const invNum = nextInvoiceNumber(invoices);
 
       const terms = document.getElementById('terms').value;
       let dueDate = '';

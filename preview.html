@@ -31,6 +31,11 @@
   .preview h1 { font-size: 22px; margin-bottom: 4px; }
   .preview .meta { color: #888; font-size: 13px; margin-bottom: 20px; }
   .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .items { margin-top: 20px; }
+  .items h2 { font-size: 14px; margin-bottom: 4px; }
+  .items .row { gap: 12px; font-size: 13px; }
+  .items .description { flex: 1; overflow-wrap: anywhere; }
+  .items .money { white-space: nowrap; text-align: right; }
   .total { font-size: 20px; font-weight: 700; margin-top: 16px; text-align: right; color: #1E3A2F; }
   .btn {
     display: block;
@@ -63,7 +68,7 @@
     <div class="row"><span>Invoice #</span><strong id="number"></strong></div>
     <div class="row"><span>Customer</span><strong id="customer"></strong></div>
     <div class="row" id="abnRow" style="display:none;"><span>ABN</span><span id="abn"></span></div>
-    <div class="row"><span>Description</span><span id="desc"></span></div>
+    <div class="items"><h2>Line items</h2><div id="lineItems"></div></div>
     <div class="row" id="dueRow" style="display:none;"><span>Due date</span><span id="dueDate"></span></div>
     <div class="row" id="notesRow" style="display:none;"><span>Notes</span><span id="notes"></span></div>
     <div class="row"><span>Amount (ex GST)</span><span id="amount"></span></div>
@@ -87,11 +92,25 @@
       document.getElementById('meta').textContent = inv.date || '';
       document.getElementById('number').textContent = inv.number || '';
       document.getElementById('customer').textContent = inv.customer;
-      document.getElementById('desc').textContent = inv.desc;
+      const lines = Array.isArray(inv.lines) && inv.lines.length
+        ? inv.lines : [{ desc: inv.desc || '', qty: 1, price: inv.amount ?? inv.subtotal ?? 0 }];
+      const lineItems = document.getElementById('lineItems');
+      lines.forEach(line => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const description = document.createElement('span');
+        description.className = 'description';
+        description.textContent = line.desc || '';
+        const money = document.createElement('span');
+        money.className = 'money';
+        money.textContent = `${line.qty || 1} × $${Number(line.price || 0).toFixed(2)} = $${Number(line.amount ?? (line.qty || 1) * (line.price || 0)).toFixed(2)}`;
+        row.append(description, money);
+        lineItems.appendChild(row);
+      });
       if (inv.abn) { document.getElementById('abn').textContent = inv.abn; document.getElementById('abnRow').style.display = 'flex'; }
       if (inv.dueDate) { document.getElementById('dueDate').textContent = inv.dueDate; document.getElementById('dueRow').style.display = 'flex'; }
       if (inv.notes) { document.getElementById('notes').textContent = inv.notes; document.getElementById('notesRow').style.display = 'flex'; }
-      document.getElementById('amount').textContent = '$' + (inv.amount || inv.subtotal || 0).toFixed(2);
+      document.getElementById('amount').textContent = '$' + Number(inv.subtotal ?? inv.amount ?? 0).toFixed(2);
       document.getElementById('gst').textContent = '$' + (inv.gst || 0).toFixed(2);
       document.getElementById('total').textContent = 'Total: $' + (inv.total || 0).toFixed(2);
     }
@@ -117,7 +136,8 @@ Please find your invoice details below:
 
 Invoice: ${inv.number || ''}
 Date: ${inv.date || ''}
-Description: ${inv.desc || ''}
+Line items:
+${(Array.isArray(inv.lines) && inv.lines.length ? inv.lines : [{ desc: inv.desc || '', qty: 1, price: inv.amount || 0 }]).map(line => `- ${line.desc || ''}: ${line.qty || 1} × $${Number(line.price || 0).toFixed(2)}`).join('\n')}
 Amount: $${(inv.total || 0).toFixed(2)} (incl GST)
 ${inv.dueDate ? 'Due date: ' + inv.dueDate + '\n' : ''}${inv.notes ? 'Notes: ' + inv.notes + '\n' : ''}
 Thank you.

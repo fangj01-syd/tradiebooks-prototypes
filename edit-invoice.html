@@ -13,7 +13,7 @@
     max-width: 430px;
     margin: 0 auto;
     min-height: 100vh;
-    padding-bottom: 40px;
+    padding-bottom: 80px;
   }
   header {
     background: white;
@@ -26,7 +26,7 @@
   header h1 { font-size: 18px; font-weight: 600; }
   .form { padding: 16px; }
   label { display: block; font-size: 13px; color: #666; margin: 16px 0 6px; }
-  input {
+  input, select {
     width: 100%;
     padding: 14px;
     border: 1px solid #ddd;
@@ -34,6 +34,10 @@
     font-size: 16px;
     background: white;
   }
+  .line-item { background: white; border: 1px solid #eee; border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+  .line-item input { margin-bottom: 6px; }
+  .remove-line { background: none; border: 0; color: #c62828; padding: 8px 0; }
+  .add-line { width: 100%; padding: 12px; border: 1px dashed #bbb; border-radius: 12px; background: white; font-size: 15px; }
   .total {
     background: white;
     margin: 16px;
@@ -64,17 +68,31 @@
   </header>
 
   <div class="form">
+    <label>Your ABN (optional)</label>
+    <input type="text" id="abn" placeholder="e.g. 12 345 678 901">
+
     <label>Customer</label>
     <input type="text" id="customer">
 
-    <label>Description</label>
-    <input type="text" id="desc">
+    <label>Payment terms</label>
+    <select id="terms">
+      <option value="due">Due on receipt</option>
+      <option value="7">Net 7</option>
+      <option value="14">Net 14</option>
+      <option value="30">Net 30</option>
+    </select>
 
-    <label>Amount (ex GST)</label>
-    <input type="number" id="amount" oninput="calc()">
+    <label>Line items</label>
+    <div id="lineItems"></div>
+    <button class="add-line" type="button" onclick="addLine()">+ Add line item</button>
+
+    <label>Notes (optional)</label>
+    <input type="text" id="notes">
   </div>
 
   <div class="total">
+    <div class="label">Subtotal</div>
+    <div style="font-size:18px; margin:4px 0;">$<span id="subtotal">0.00</span></div>
     <div class="label">GST (10%)</div>
     <div style="font-size:18px; margin:4px 0;">$<span id="gst">0.00</span></div>
     <div class="label" style="margin-top:12px;">Total (incl GST)</div>
@@ -85,44 +103,88 @@
 
   <script>
     const params = new URLSearchParams(location.search);
-    const idx = parseInt(params.get('idx'));
+    const idx = Number(params.get('idx'));
     const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
-    const inv = invoices[idx];
+    const inv = Number.isInteger(idx) && idx >= 0 ? invoices[idx] : null;
+
+    function addLine(line = {}) {
+      const div = document.createElement('div');
+      div.className = 'line-item';
+      div.innerHTML = `
+        <input type="text" class="desc" placeholder="Description" oninput="calc()">
+        <div style="display:flex; gap:8px;">
+          <input type="number" class="qty" min="0.01" step="any" inputmode="decimal" placeholder="Qty" oninput="calc()" style="width:80px;">
+          <input type="number" class="price" min="0.01" step="any" inputmode="decimal" placeholder="Price" oninput="calc()" style="flex:1;">
+        </div>
+        <button class="remove-line" type="button" onclick="this.parentElement.remove(); calc();">Remove</button>`;
+      div.querySelector('.desc').value = line.desc || '';
+      div.querySelector('.qty').value = line.qty ?? 1;
+      div.querySelector('.price').value = line.price ?? '';
+      document.getElementById('lineItems').appendChild(div);
+      calc();
+    }
 
     if (!inv) {
       alert('Invoice not found');
       location.href = 'invoices.html';
     } else {
-      document.getElementById('customer').value = inv.customer;
-      document.getElementById('desc').value = inv.desc;
-      document.getElementById('amount').value = inv.amount;
-      calc();
+      document.getElementById('customer').value = inv.customer || '';
+      document.getElementById('abn').value = inv.abn || '';
+      document.getElementById('notes').value = inv.notes || '';
+      document.getElementById('terms').value = ['due', '7', '14', '30'].includes(inv.terms) ? inv.terms : 'due';
+      const lines = Array.isArray(inv.lines) && inv.lines.length
+        ? inv.lines : [{ desc: inv.desc || '', qty: 1, price: inv.amount ?? inv.subtotal ?? '' }];
+      lines.forEach(addLine);
     }
 
     function calc() {
-      const amt = parseFloat(document.getElementById('amount').value) || 0;
-      const gst = amt * 0.1;
-      const total = amt + gst;
+      let subtotal = 0;
+      document.querySelectorAll('.line-item').forEach(el => {
+        const qty = Number(el.querySelector('.qty').value);
+        const price = Number(el.querySelector('.price').value);
+        if (qty > 0 && price > 0 && Number.isFinite(qty * price)) subtotal += qty * price;
+      });
+      const gst = subtotal * 0.1;
+      const total = subtotal + gst;
+      document.getElementById('subtotal').textContent = subtotal.toFixed(2);
       document.getElementById('gst').textContent = gst.toFixed(2);
       document.getElementById('total').textContent = total.toFixed(2);
     }
 
     function save() {
       const customer = document.getElementById('customer').value.trim();
-      const desc = document.getElementById('desc').value.trim();
-      const amount = parseFloat(document.getElementById('amount').value) || 0;
-      if (!customer || amount <= 0) {
-        alert('Please enter customer and amount');
+      if (!inv || !customer) {
+        alert('Please enter a customer');
         return;
       }
-      const gst = amount * 0.1;
-      const total = amount + gst;
-
-      invoices[idx].customer = customer;
-      invoices[idx].desc = desc;
-      invoices[idx].amount = amount;
-      invoices[idx].gst = gst;
-      invoices[idx].total = total;
+      const lines = [];
+      for (const el of document.querySelectorAll('.line-item')) {
+        const desc = el.querySelector('.desc').value.trim();
+        const qty = Number(el.querySelector('.qty').value);
+        const price = Number(el.querySelector('.price').value);
+        if (!desc || !Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price) || price <= 0 || !Number.isFinite(qty * price)) {
+          alert('Complete every line item with a description, positive quantity and price');
+          return;
+        }
+        lines.push({ desc, qty, price, amount: qty * price });
+      }
+      if (!lines.length) { alert('Please add at least one line item'); return; }
+      const subtotal = lines.reduce((sum, line) => sum + line.amount, 0);
+      const gst = subtotal * 0.1;
+      const terms = document.getElementById('terms').value;
+      let dueDate = '';
+      if (terms !== 'due') {
+        const base = new Date((inv.date || new Date().toISOString().slice(0, 10)) + 'T12:00:00');
+        base.setDate(base.getDate() + Number(terms));
+        dueDate = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
+      }
+      Object.assign(inv, {
+        customer, lines, subtotal, gst, total: subtotal + gst, terms, dueDate,
+        notes: document.getElementById('notes').value.trim(),
+        abn: document.getElementById('abn').value.trim()
+      });
+      delete inv.desc;
+      delete inv.amount;
       localStorage.setItem('invoices', JSON.stringify(invoices));
       location.href = 'invoices.html';
     }

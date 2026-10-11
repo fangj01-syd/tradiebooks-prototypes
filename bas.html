@@ -79,6 +79,7 @@
     <a href="index.html">←</a>
     <h1>BAS this quarter</h1>
   </header>
+  <p id="period" style="margin:12px 16px 0; color:#5a655a; font-size:13px;"></p>
 
   <div class="card">
     <div class="row"><span class="label">G1 Total sales</span><span class="value" id="g1">$0</span></div>
@@ -93,6 +94,7 @@
   </div>
 
   <button class="btn" onclick="exportBAS()">Copy for accountant</button>
+  <p style="margin:8px 16px; color:#5a655a; font-size:12px; line-height:1.5;">Estimate from recorded dates. Check your GST accounting basis and purchase credits before lodging.</p>
 
   <nav>
     <a href="index.html"><div>🏠</div>Home</a>
@@ -102,19 +104,28 @@
     <a href="settings.html"><div>⚙️</div>More</a>
   </nav>
 
+  <script src="reporting-period.js"></script>
   <script>
     const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
     const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
-    const totalSales = invoices.reduce((s, i) => s + (i.total || 0), 0);
-    const gstSales = invoices.reduce((s, i) => s + (i.gst || 0), 0);
-    const gstPurchases = receipts.reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
+    const period = currentQuarter();
+    const quarterInvoices = invoices.filter(i => period.includes(i.date));
+    const quarterReceipts = receipts.filter(r => period.includes(r.date));
+    const endDate = new Date(period.end + 'T12:00:00');
+    endDate.setDate(endDate.getDate() - 1);
+    const formatDate = value => new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(value);
+    const periodLabel = `${formatDate(new Date(period.start + 'T12:00:00'))} – ${formatDate(endDate)}`;
+    document.getElementById('period').textContent = periodLabel;
+    const totalSales = quarterInvoices.reduce((s, i) => s + (i.total || 0), 0);
+    const gstSales = quarterInvoices.reduce((s, i) => s + (i.gst || 0), 0);
+    const gstPurchases = quarterReceipts.reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
     const net = Math.max(0, gstSales - gstPurchases);
     document.getElementById('g1').textContent = '$' + Math.round(totalSales);
     document.getElementById('a1').textContent = '$' + Math.round(gstSales);
     document.getElementById('b1').textContent = '$' + Math.round(gstPurchases);
     document.getElementById('net').textContent = '$' + Math.round(net);
     function exportBAS() {
-      const text = `TradieBooks BAS Summary\n\nG1 Total sales: $${totalSales.toFixed(2)}\n1A GST on sales: $${gstSales.toFixed(2)}\n1B GST on purchases: $${gstPurchases.toFixed(2)}\nGST to pay: $${net.toFixed(2)}`;
+      const text = `TradieBooks BAS estimate (${periodLabel})\n\nG1 Total sales: $${totalSales.toFixed(2)}\n1A GST on sales: $${gstSales.toFixed(2)}\n1B GST on purchases: $${gstPurchases.toFixed(2)}\nGST to pay: $${net.toFixed(2)}\n\nCheck your GST accounting basis and purchase credits before lodging.`;
       navigator.clipboard.writeText(text).then(() => alert('Copied')).catch(() => alert(text));
     }
   </script>
