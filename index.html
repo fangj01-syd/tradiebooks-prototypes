@@ -23,25 +23,25 @@
     justify-content: space-between;
     box-shadow: 0 1px 0 rgba(0,0,0,0.04);
   }
-  .logo { font-weight: 800; font-size: 21px; color: #163028; letter-spacing: -0.4px; }
-  .logo span { color: #c45c3e; }
+  .logo { font-weight: 800; font-size: 21px; color: #1E3A2F; letter-spacing: -0.4px; }
+  .logo span { color: #C45C3E; }
   .card {
     background: white;
     margin: 16px;
     border-radius: 20px;
     padding: 20px;
-    box-shadow: 0 4px 16px rgba(22, 48, 40, 0.06);
+    box-shadow: 0 4px 16px rgba(30, 58, 47, 0.06);
   }
   .card h2 { font-size: 13px; color: #7a857a; font-weight: 500; margin-bottom: 6px; }
-  .card .amount { font-size: 34px; font-weight: 700; color: #163028; letter-spacing: -0.8px; }
+  .card .amount { font-size: 34px; font-weight: 700; color: #1E3A2F; letter-spacing: -0.8px; }
   .card .sub { font-size: 13px; color: #9aa39a; margin-top: 4px; }
   .stats { display: flex; gap: 12px; margin: 0 16px 8px; }
   .stat {
     flex: 1; background: white; border-radius: 16px; padding: 16px 12px; text-align: center;
-    box-shadow: 0 2px 8px rgba(22, 48, 40, 0.05);
+    box-shadow: 0 2px 8px rgba(30, 58, 47, 0.05);
   }
   .stat .label { font-size: 11px; color: #9aa39a; text-transform: uppercase; letter-spacing: 0.4px; }
-  .stat .val { font-size: 20px; font-weight: 700; margin-top: 6px; color: #163028; }
+  .stat .val { font-size: 20px; font-weight: 700; margin-top: 6px; color: #1E3A2F; }
   .recent { margin: 12px 16px 20px; }
   .recent h3 { font-size: 13px; margin-bottom: 10px; color: #7a857a; font-weight: 500; }
   .recent-item {
@@ -51,14 +51,12 @@
   }
   .btn {
     display: block; width: calc(100% - 32px); margin: 10px 16px; padding: 16px;
-    background: #163028; color: white; border: none; border-radius: 28px;
+    background: #1E3A2F; color: white; border: none; border-radius: 28px;
     font-size: 16px; font-weight: 600; text-align: center; text-decoration: none;
-    box-shadow: 0 4px 12px rgba(22, 48, 40, 0.2);
-    transition: transform 0.12s ease;
+    box-shadow: 0 4px 12px rgba(30, 58, 47, 0.2);
     min-height: 48px;
   }
-  .btn:active { transform: scale(0.97); }
-  .btn.secondary { background: #c45c3e; box-shadow: 0 4px 12px rgba(196, 92, 62, 0.25); }
+  .btn.secondary { background: #C45C3E; box-shadow: 0 4px 12px rgba(196, 92, 62, 0.25); }
   nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 430px; background: white;
@@ -70,9 +68,8 @@
     font-size: 10px; min-height: 52px; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 2px;
   }
-  nav a.active { color: #163028; font-weight: 600; }
+  nav a.active { color: #1E3A2F; font-weight: 600; }
   nav a div { font-size: 20px; }
-  input, select, button { font-size: 16px; touch-action: manipulation; }
 </style>
 </head>
 <body>
@@ -110,7 +107,7 @@
 
   <div class="card" style="margin-top:4px;">
     <h2>Income (last 6 months)</h2>
-    <div id="chart" style="display:flex; align-items:flex-end; height:120px; gap:8px; margin-top:16px; padding:0 4px;"></div>
+    <div id="chart" style="display:flex; align-items:flex-end; height:120px; gap:8px; margin-top:16px;"></div>
   </div>
 
   <div class="recent">
@@ -167,10 +164,10 @@
       const maxIncome = Math.max(...months.map(m => invoices.filter(inv => (inv.date||'').startsWith(m)).reduce((s,inv)=>s+(inv.total||0),0)), 1);
       chartEl.innerHTML = months.map((m, i) => {
         const amt = invoices.filter(inv => (inv.date||'').startsWith(m)).reduce((s,inv)=>s+(inv.total||0),0);
-        const h = Math.round((amt / maxIncome) * 90) || 6;
+        const h = Math.round((amt / maxIncome) * 90) || 8;
         const label = m.slice(5);
         const isCurrent = i === months.length - 1;
-        const color = isCurrent ? '#163028' : '#7a9a8a';
+        const color = isCurrent ? '#1E3A2F' : '#B8D4C4';
         return `<div style="flex:1; text-align:center;">
           <div style="background:${color}; height:${h}px; border-radius:6px 6px 2px 2px;" title="$${Math.round(amt)}"></div>
           <div style="font-size:11px; color:#888; margin-top:6px; font-weight:${isCurrent?'600':'400'};">${label}</div>
