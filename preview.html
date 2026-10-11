@@ -54,8 +54,12 @@
   <div class="preview" id="preview">
     <h1>Invoice</h1>
     <div class="meta" id="meta"></div>
+    <div class="row"><span>Invoice #</span><strong id="number"></strong></div>
     <div class="row"><span>Customer</span><strong id="customer"></strong></div>
+    <div class="row" id="abnRow" style="display:none;"><span>ABN</span><span id="abn"></span></div>
     <div class="row"><span>Description</span><span id="desc"></span></div>
+    <div class="row" id="dueRow" style="display:none;"><span>Due date</span><span id="dueDate"></span></div>
+    <div class="row" id="notesRow" style="display:none;"><span>Notes</span><span id="notes"></span></div>
     <div class="row"><span>Amount (ex GST)</span><span id="amount"></span></div>
     <div class="row"><span>GST (10%)</span><span id="gst"></span></div>
     <div class="total" id="total"></div>
@@ -73,8 +77,12 @@
       document.getElementById('preview').innerHTML = '<p>Invoice not found</p>';
     } else {
       document.getElementById('meta').textContent = inv.date || '';
+      document.getElementById('number').textContent = inv.number || '';
       document.getElementById('customer').textContent = inv.customer;
       document.getElementById('desc').textContent = inv.desc;
+      if (inv.abn) { document.getElementById('abn').textContent = inv.abn; document.getElementById('abnRow').style.display = 'flex'; }
+      if (inv.dueDate) { document.getElementById('dueDate').textContent = inv.dueDate; document.getElementById('dueRow').style.display = 'flex'; }
+      if (inv.notes) { document.getElementById('notes').textContent = inv.notes; document.getElementById('notesRow').style.display = 'flex'; }
       document.getElementById('amount').textContent = '$' + inv.amount.toFixed(2);
       document.getElementById('gst').textContent = '$' + inv.gst.toFixed(2);
       document.getElementById('total').textContent = 'Total: $' + inv.total.toFixed(2);
