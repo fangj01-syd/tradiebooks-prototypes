@@ -2,175 +2,229 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradieBooks Interface Prototypes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TradieBooks</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #f5f7f5;
-    color: #1c211c;
-    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #f7f9f7 0%, #eef2ee 100%);
+    color: #1a1f1a;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 80px;
   }
   header {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-  header h1 {
-    font-size: 28px;
-    color: #1E3A2F;
-  }
-  header p {
-    color: #5a6b5a;
-    margin-top: 8px;
-  }
-  .section {
-    margin-bottom: 48px;
-  }
-  .section h2 {
-    font-size: 20px;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #1E3A2F;
-    color: #1E3A2F;
-  }
-  .gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 20px;
-  }
-  .card {
     background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    text-align: center;
-  }
-  .phone {
-    width: 100%;
-    height: 420px;
-    background: #111;
+    padding: 16px 20px 14px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    overflow: hidden;
+    justify-content: space-between;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
   }
-  .phone img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: top;
-  }
-  .label {
-    padding: 12px;
-    font-size: 14px;
-    font-weight: 500;
-  }
-  .nav {
-    position: sticky;
-    top: 0;
+  .logo { font-weight: 800; font-size: 21px; color: #163028; letter-spacing: -0.4px; }
+  .logo span { color: #c45c3e; }
+  .card {
     background: white;
-    padding: 12px 20px;
-    margin: -20px -20px 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    z-index: 10;
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .nav a {
-    color: #1E3A2F;
-    text-decoration: none;
-    font-size: 14px;
-    padding: 6px 12px;
+    margin: 16px;
     border-radius: 20px;
-    background: #eef5ee;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(22, 48, 40, 0.06);
   }
-  .nav a:hover { background: #d4e8d4; }
+  .card h2 { font-size: 13px; color: #7a857a; font-weight: 500; margin-bottom: 6px; }
+  .card .amount { font-size: 34px; font-weight: 700; color: #163028; letter-spacing: -0.8px; }
+  .card .sub { font-size: 13px; color: #9aa39a; margin-top: 4px; }
+  .stats { display: flex; gap: 12px; margin: 0 16px 8px; }
+  .stat {
+    flex: 1; background: white; border-radius: 16px; padding: 16px 12px; text-align: center;
+    box-shadow: 0 2px 8px rgba(22, 48, 40, 0.05);
+  }
+  .stat .label { font-size: 11px; color: #9aa39a; text-transform: uppercase; letter-spacing: 0.4px; }
+  .stat .val { font-size: 20px; font-weight: 700; margin-top: 6px; color: #163028; }
+  .recent { margin: 12px 16px 20px; }
+  .recent h3 { font-size: 13px; margin-bottom: 10px; color: #7a857a; font-weight: 500; }
+  .recent-item {
+    background: white; padding: 14px 16px; border-radius: 14px; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center; font-size: 14.5px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  }
+  .btn {
+    display: block; width: calc(100% - 32px); margin: 10px 16px; padding: 16px;
+    background: #163028; color: white; border: none; border-radius: 28px;
+    font-size: 16px; font-weight: 600; text-align: center; text-decoration: none;
+    box-shadow: 0 4px 12px rgba(22, 48, 40, 0.2);
+    transition: transform 0.12s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn.secondary { background: #c45c3e; box-shadow: 0 4px 12px rgba(196, 92, 62, 0.25); }
+  .guide {
+    background: #e8f4ec; margin: 16px; padding: 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; color: #163028;
+  }
+  .guide button { margin-top: 10px; background: none; border: none; color: #163028; font-weight: 600; font-size: 13px; }
+  nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px; background: white;
+    display: flex; border-top: 1px solid #eee; padding: 8px 0 12px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+  }
+  nav a { flex: 1; text-align: center; text-decoration: none; color: #b0b8b0; font-size: 10px; }
+  nav a.active { color: #163028; font-weight: 600; }
+  nav a div { font-size: 22px; margin-bottom: 2px; }
+
+  .notice {
+    background: #fff8e6;
+    margin: 12px 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    color: #7a5c00;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .notice button {
+    background: none;
+    border: none;
+    color: #7a5c00;
+    font-size: 16px;
+    padding: 0;
+    margin-left: auto;
+    cursor: pointer;
+  }
+
 </style>
 </head>
 <body>
-  <div class="nav">
-    <a href="#mvp">Version 1 Core</a>
-    <a href="#lists">Lists & Management</a>
-    <a href="#v2">Version 2 Features</a>
-    <a href="#payment">Payment Flow</a>
-    <a href="#more">More Screens</a>
-  </div>
-
   <header>
-    <h1>TradieBooks Interface Prototypes</h1>
-    <p>Solo Trader Accounting App · Mobile First</p>
+    <div class="logo">Tradie<span>Books</span></div>
+    <div style="font-size:12px;color:#b0b8b0;">Solo</div>
   </header>
 
-  <div class="section" id="mvp">
-    <h2>Version 1 – Core Flow</h2>
-    <div class="gallery" id="gallery-mvp"></div>
+  <div class="notice" id="dataNotice">
+    <span>⚠️</span>
+    <span>Data is stored only on this device. Clearing browser data will delete it. Use More → Export backup to save a copy.</span>
+    <button onclick="document.getElementById('dataNotice').style.display='none'">×</button>
   </div>
 
-  <div class="section" id="lists">
-    <h2>Lists, Settings & Management</h2>
-    <div class="gallery" id="gallery-lists"></div>
+  <div class="guide" id="guide" style="display:none;">
+    <strong>Quick start</strong><br>
+    Create an invoice → Add receipts → Check BAS
+    <button onclick="dismissGuide()">Got it</button>
   </div>
 
-  <div class="section" id="v2">
-    <h2>Version 2 Features</h2>
-    <div class="gallery" id="gallery-v2"></div>
+  <div class="card">
+    <h2>GST this quarter</h2>
+    <div class="amount" id="gstAmount">$0</div>
+    <div class="sub">to pay</div>
   </div>
 
-  <div class="section" id="payment">
-    <h2>Complete Payment Flow</h2>
-    <div class="gallery" id="gallery-payment"></div>
+  <div class="card">
+    <h2>Unpaid invoices</h2>
+    <div class="amount" id="unpaidAmount">$0</div>
+    <div class="sub" id="unpaidCount">0 invoices</div>
   </div>
 
-  <div class="section" id="more">
-    <h2>Additional Key Screens</h2>
-    <div class="gallery" id="gallery-more"></div>
+  <div class="stats">
+    <div class="stat">
+      <div class="label">This month</div>
+      <div class="val" id="monthIncome">$0</div>
+      <div class="label" style="margin-top:2px;">income</div>
+    </div>
+    <div class="stat">
+      <div class="label">This month</div>
+      <div class="val" id="monthExpenses">$0</div>
+      <div class="label" style="margin-top:2px;">expenses</div>
+    </div>
   </div>
+
+  <div class="recent">
+    <h3>Recent</h3>
+    <div id="recentList"></div>
+  </div>
+
+  <a href="invoice.html" class="btn">+ New Invoice</a>
+  <a href="receipt.html" class="btn secondary">+ Add Receipt</a>
+
+  <button class="btn" style="background:white; color:#163028; border:1.5px solid #163028; box-shadow:none; margin-top:4px;" onclick="exportBackup()">Export backup</button>
+
+  <label class="btn" style="background:white; color:#163028; border:1.5px solid #163028; box-shadow:none; margin-top:4px; text-align:center; cursor:pointer;">
+    Import backup
+    <input type="file" id="importFileHome" accept=".json" style="display:none;" onchange="importBackup(this)">
+  </label>
+
+  <nav>
+    <a href="index.html" class="active"><div>🏠</div>Home</a>
+    <a href="invoices.html"><div>📄</div>Invoices</a>
+    <a href="receipts.html"><div>🧾</div>Receipts</a>
+    <a href="bas.html"><div>📊</div>BAS</a>
+    <a href="settings.html"><div>⚙️</div>More</a>
+  </nav>
 
   <script>
-    const images = [
-      "0ivCs.jpg","2uwCn.jpg","3qg9H.jpg","3zJaM.jpg","5VS04.jpg",
-      "6HBm5.jpg","7XpmX.jpg","82XEI.jpg","9iODl.jpg","AMvdN.jpg",
-      "B2q6J.jpg","ETYKV.jpg","FI8mk.jpg","JukgA.jpg","Kb0dx.jpg",
-      "MZVIn.jpg","NU9n0.jpg","NaAMz.jpg","QPigm.jpg","S7O0N.jpg",
-      "SaBMN.jpg","Sk2ku.jpg","VjkQv.jpg","VqeB7.jpg","ZEOxz.jpg",
-      "ZpCuf.jpg","aaAMd.jpg","aci6Y.jpg","auacW.jpg","b86fF.jpg",
-      "b88CS.jpg","eekim.jpg","fuJmv.jpg","gEyh0.jpg","gxmKH.jpg",
-      "hK1M3.jpg","ilfTy.jpg","jW2qd.jpg","kRLke.jpg","krYrE.jpg",
-      "lVv2B.jpg","lZm5M.jpg","mrypZ.jpg","nbcPL.jpg","pOrOd.jpg",
-      "pqO8Q.jpg","sHx5K.jpg","tYCr4.jpg","uRvov.jpg","uXoR7.jpg"
-    ];
+    if (!localStorage.getItem('guideDismissed')) document.getElementById('guide').style.display = 'block';
+    function dismissGuide() {
+      localStorage.setItem('guideDismissed', '1');
+      document.getElementById('guide').style.display = 'none';
+    }
+    function load() {
+      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+      const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
+      const unpaid = invoices.filter(i => !i.paid);
+      const unpaidTotal = unpaid.reduce((s, i) => s + (i.total || 0), 0);
+      const salesGST = invoices.reduce((s, i) => s + (i.gst || 0), 0);
+      const purchaseGST = receipts.reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
+      const netGST = Math.max(0, salesGST - purchaseGST);
+      document.getElementById('gstAmount').textContent = '$' + Math.round(netGST);
+      document.getElementById('unpaidAmount').textContent = '$' + Math.round(unpaidTotal);
+      document.getElementById('unpaidCount').textContent = unpaid.length + ' invoice' + (unpaid.length !== 1 ? 's' : '');
+      const month = new Date().toISOString().slice(0, 7);
+      const monthIncome = invoices.filter(i => (i.date || '').startsWith(month)).reduce((s, i) => s + (i.total || 0), 0);
+      const monthExpenses = receipts.filter(r => (r.date || '').startsWith(month)).reduce((s, r) => s + (r.amount || 0), 0);
+      document.getElementById('monthIncome').textContent = '$' + Math.round(monthIncome);
+      document.getElementById('monthExpenses').textContent = '$' + Math.round(monthExpenses);
+      const recent = [
+        ...invoices.slice(0, 4).map(i => ({ type: 'invoice', text: i.customer || 'Invoice', amount: i.total || 0, date: i.date })),
+        ...receipts.slice(0, 4).map(r => ({ type: 'receipt', text: r.merchant || 'Receipt', amount: r.amount || 0, date: r.date }))
+      ].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
+      const recentList = document.getElementById('recentList');
+      recentList.innerHTML = recent.length === 0
+        ? '<div style="color:#aaa;font-size:14px;padding:12px 0;">No activity yet</div>'
+        : recent.map(r => `<div class="recent-item"><span>${r.type === 'invoice' ? '📄' : '🧾'} ${r.text}</span><span style="font-weight:600;">$${Math.round(r.amount)}</span></div>`).join('');
+    }
+    load();
 
-    const sections = {
-      mvp: images.slice(0, 10),
-      lists: images.slice(10, 20),
-      v2: images.slice(20, 32),
-      payment: images.slice(32, 40),
-      more: images.slice(40)
-    };
-
-    function renderGallery(id, list) {
-      const el = document.getElementById(id);
-      list.forEach((img, i) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="phone">
-            <img src="rendered/${img}" alt="Screen ${i+1}">
-          </div>
-          <div class="label">Screen ${i+1}</div>
-        `;
-        el.appendChild(card);
-      });
+    function importBackup(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.invoices) localStorage.setItem('invoices', JSON.stringify(data.invoices));
+          if (data.receipts) localStorage.setItem('receipts', JSON.stringify(data.receipts));
+          alert('Backup imported');
+          location.reload();
+        } catch {
+          alert('Invalid backup file');
+        }
+      };
+      reader.readAsText(file);
     }
 
-    renderGallery('gallery-mvp', sections.mvp);
-    renderGallery('gallery-lists', sections.lists);
-    renderGallery('gallery-v2', sections.v2);
-    renderGallery('gallery-payment', sections.payment);
-    renderGallery('gallery-more', sections.more);
+    function exportBackup() {
+      const data = {
+        invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
+        receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
+        exported: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'tradiebooks-backup.json';
+      a.click();
+    }
   </script>
 </body>
 </html>
