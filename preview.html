@@ -97,6 +97,7 @@
 Please find your invoice details below:
 
 Invoice: ${inv.number || ''}
+Date: ${inv.date || ''}
 Description: ${inv.desc || ''}
 Amount: $${(inv.total || 0).toFixed(2)} (incl GST)
 ${inv.dueDate ? 'Due date: ' + inv.dueDate + '\n' : ''}${inv.notes ? 'Notes: ' + inv.notes + '\n' : ''}
