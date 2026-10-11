@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>New Invoice - TradieBooks</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(180deg, #f7f9f7 0%, #eef2ee 100%);
+    color: #1a1f1a;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  header {
+    background: white;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  }
+  header a { text-decoration: none; color: #163028; font-size: 22px; margin-right: 8px; padding: 4px 8px; }
+  header h1 { font-size: 17px; font-weight: 600; }
+  .form { padding: 8px 16px; }
+  label { display: block; font-size: 12px; color: #7a857a; margin: 18px 0 6px; font-weight: 500; }
+  input, select {
+    width: 100%;
+    padding: 15px;
+    border: 1.5px solid #e5e8e5;
+    border-radius: 14px;
+    font-size: 16px;
+    background: white;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: #163028; }
+  .total {
+    background: white;
+    margin: 12px 16px;
+    padding: 20px;
+    border-radius: 18px;
+    text-align: right;
+    box-shadow: 0 4px 16px rgba(22, 48, 40, 0.06);
+  }
+  .total .label { font-size: 13px; color: #7a857a; }
+  .total .amount { font-size: 30px; font-weight: 700; color: #163028; margin-top: 4px; letter-spacing: -0.5px; }
+  .btn {
+    display: block;
+    width: calc(100% - 32px);
+    margin: 12px 16px;
+    padding: 16px;
+    background: #163028;
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(22, 48, 40, 0.2);
+  }
+  .btn:active { transform: scale(0.97); }
+  .success { display: none; text-align: center; padding: 70px 24px; }
+  .success h2 { color: #163028; margin: 12px 0 8px; font-size: 22px; }
+</style>
+</head>
+<body>
+  <header>
+    <a href="index.html">←</a>
+    <h1>New Invoice</h1>
+  </header>
+
+  <div id="formView">
+    <div class="form">
+      <label>Customer</label>
+      <select id="customerSelect" onchange="onCustomerChange()">
+        <option value="">Select existing or type new</option>
+      </select>
+      <input type="text" id="customer" placeholder="Customer name" style="margin-top:8px;">
+
+      <label>Description</label>
+      <input type="text" id="desc" placeholder="e.g. Bathroom plumbing">
+
+      <label>Amount (ex GST)</label>
+      <input type="number" id="amount" placeholder="0.00" inputmode="decimal" oninput="calc()">
+    </div>
+
+    <div class="total">
+      <div class="label">GST (10%)</div>
+      <div style="font-size:16px; color:#555; margin-top:2px;">$<span id="gst">0.00</span></div>
+      <div class="label" style="margin-top:16px;">Total (incl GST)</div>
+      <div class="amount">$<span id="total">0.00</span></div>
+    </div>
+
+    <button class="btn" onclick="save()">Save Invoice</button>
+  </div>
+
+  <div id="successView" class="success">
+    <div style="font-size:60px; color:#163028;">✓</div>
+    <h2>Invoice saved</h2>
+    <p style="color:#7a857a; margin-bottom:28px;">Added to your list.</p>
+    <a href="invoices.html" class="btn" style="display:inline-block; width:auto; padding:14px 40px;">View Invoices</a>
+  </div>
+
+  <script>
+    const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+    const customers = [...new Set(invoices.map(i => i.customer).filter(Boolean))];
+    const select = document.getElementById('customerSelect');
+    customers.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      select.appendChild(opt);
+    });
+    function onCustomerChange() {
+      const val = document.getElementById('customerSelect').value;
+      if (val) document.getElementById('customer').value = val;
+    }
+    function calc() {
+      const amt = parseFloat(document.getElementById('amount').value) || 0;
+      const gst = amt * 0.1;
+      const total = amt + gst;
+      document.getElementById('gst').textContent = gst.toFixed(2);
+      document.getElementById('total').textContent = total.toFixed(2);
+    }
+    function save() {
+      const customer = document.getElementById('customer').value.trim();
+      const desc = document.getElementById('desc').value.trim();
+      const amount = parseFloat(document.getElementById('amount').value) || 0;
+      if (!customer || amount <= 0) { alert('Please enter customer and amount'); return; }
+      const gst = amount * 0.1;
+      const total = amount + gst;
+      invoices.unshift({ id: Date.now(), customer, desc, amount, gst, total, paid: false, date: new Date().toISOString().slice(0, 10) });
+      localStorage.setItem('invoices', JSON.stringify(invoices));
+      document.getElementById('formView').style.display = 'none';
+      document.getElementById('successView').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
