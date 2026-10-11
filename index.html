@@ -110,7 +110,7 @@
 
   <div class="card" style="margin-top:4px;">
     <h2>Income (last 6 months)</h2>
-    <div id="chart" style="display:flex; align-items:flex-end; height:100px; gap:6px; margin-top:12px;"></div>
+    <div id="chart" style="display:flex; align-items:flex-end; height:120px; gap:8px; margin-top:16px; padding:0 4px;"></div>
   </div>
 
   <div class="recent">
@@ -157,7 +157,6 @@
       document.getElementById('monthIncome').textContent = '$' + Math.round(monthIncome);
       document.getElementById('monthExpenses').textContent = '$' + Math.round(monthExpenses);
 
-      // Chart
       const chartEl = document.getElementById('chart');
       const months = [];
       for (let i = 5; i >= 0; i--) {
@@ -166,11 +165,16 @@
         months.push(d.toISOString().slice(0, 7));
       }
       const maxIncome = Math.max(...months.map(m => invoices.filter(inv => (inv.date||'').startsWith(m)).reduce((s,inv)=>s+(inv.total||0),0)), 1);
-      chartEl.innerHTML = months.map(m => {
+      chartEl.innerHTML = months.map((m, i) => {
         const amt = invoices.filter(inv => (inv.date||'').startsWith(m)).reduce((s,inv)=>s+(inv.total||0),0);
-        const h = Math.round((amt / maxIncome) * 80) || 4;
+        const h = Math.round((amt / maxIncome) * 90) || 6;
         const label = m.slice(5);
-        return `<div style="flex:1; text-align:center;"><div style="background:#163028; height:${h}px; border-radius:4px 4px 0 0;"></div><div style="font-size:10px; color:#888; margin-top:4px;">${label}</div></div>`;
+        const isCurrent = i === months.length - 1;
+        const color = isCurrent ? '#163028' : '#7a9a8a';
+        return `<div style="flex:1; text-align:center;">
+          <div style="background:${color}; height:${h}px; border-radius:6px 6px 2px 2px;" title="$${Math.round(amt)}"></div>
+          <div style="font-size:11px; color:#888; margin-top:6px; font-weight:${isCurrent?'600':'400'};">${label}</div>
+        </div>`;
       }).join('');
 
       const recent = [
