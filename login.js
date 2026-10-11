@@ -97,7 +97,10 @@
     event.preventDefault();
     email = $('email').value.trim().toLowerCase();
     status('Sending sign-in email...');
-    const { error } = await cloud.client.auth.signInWithOtp({ email });
+    const { error } = await cloud.client.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: new URL('login.html', location.href).href }
+    });
     if (error) { status(error.message, true); return; }
     $('sentTo').textContent = email;
     show('codeStep');
