@@ -45,9 +45,10 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   }
   .top { display: flex; justify-content: space-between; align-items: flex-start; }
-  .actions { margin-top: 12px; display: flex; gap: 6px; }
+  .actions { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
   .actions button, .actions a {
     flex: 1;
+    min-width: 60px;
     padding: 9px 4px;
     border: 1px solid #e8e8e8;
     background: white;
@@ -104,6 +105,7 @@
     function render() {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       const q = (document.getElementById('search').value || '').toLowerCase();
+      const today = new Date().toISOString().slice(0, 10);
       const filtered = invoices.filter(inv => {
         const matchSearch = (inv.customer || '').toLowerCase().includes(q) || (inv.desc || '').toLowerCase().includes(q);
         const matchFilter = currentFilter === 'all' || (currentFilter === 'paid' && inv.paid) || (currentFilter === 'unpaid' && !inv.paid);
@@ -117,6 +119,7 @@
       list.innerHTML = '';
       filtered.forEach(inv => {
         const idx = invoices.indexOf(inv);
+        const isOverdue = inv.dueDate && inv.dueDate < today && !inv.paid;
         const div = document.createElement('div');
         div.className = 'item';
         div.innerHTML = `
@@ -124,12 +127,14 @@
             <div>
               <strong>${inv.number || ''} · ${inv.customer || ''}</strong><br>
               <small style="color:#888;">${inv.desc || ''} · $${(inv.total || 0).toFixed(2)}</small>
+              ${inv.dueDate ? `<br><small style="color:${isOverdue ? '#e65100' : '#888'};">Due ${inv.dueDate}${isOverdue ? ' · Overdue' : ''}</small>` : ''}
             </div>
             <span class="status ${inv.paid ? 'paid' : 'unpaid'}">${inv.paid ? 'Paid' : 'Unpaid'}</span>
           </div>
           <div class="actions">
             <a href="preview.html?idx=${idx}">Preview</a>
             <a href="edit-invoice.html?idx=${idx}">Edit</a>
+            <button onclick="duplicateInv(${idx})">Copy</button>
             <button onclick="togglePaid(${idx})" class="${inv.paid ? 'paid' : ''}">${inv.paid ? 'Unpaid' : 'Paid'}</button>
             <button onclick="deleteInv(${idx})">Delete</button>
           </div>
@@ -137,6 +142,22 @@
         list.appendChild(div);
       });
     }
+
+    function duplicateInv(idx) {
+      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+      const original = invoices[idx];
+      if (!original) return;
+      const copy = { ...original };
+      copy.id = Date.now();
+      copy.number = 'INV-' + String(invoices.length + 1001).padStart(4, '0');
+      copy.paid = false;
+      copy.date = new Date().toISOString().slice(0, 10);
+      delete copy.paidDate;
+      invoices.unshift(copy);
+      localStorage.setItem('invoices', JSON.stringify(invoices));
+      render();
+    }
+
     function togglePaid(idx) {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
       invoices[idx].paid = !invoices[idx].paid;
