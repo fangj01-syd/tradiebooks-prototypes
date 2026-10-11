@@ -66,6 +66,7 @@
   </div>
 
   <button class="btn" onclick="window.print()">Print / Save as PDF</button>
+  <button class="btn" style="background:white; color:#1E3A2F; border:1.5px solid #1E3A2F; margin-top:10px;" onclick="copyEmail()">Copy email draft</button>
 
   <script>
     const params = new URLSearchParams(location.search);
@@ -86,6 +87,30 @@
       document.getElementById('amount').textContent = '$' + inv.amount.toFixed(2);
       document.getElementById('gst').textContent = '$' + inv.gst.toFixed(2);
       document.getElementById('total').textContent = 'Total: $' + inv.total.toFixed(2);
+    }
+
+    function copyEmail() {
+      if (!inv) return;
+      const subject = `Invoice ${inv.number || ''} from TradieBooks`;
+      const body = `Hi ${inv.customer || ''},
+
+Please find your invoice details below:
+
+Invoice: ${inv.number || ''}
+Description: ${inv.desc || ''}
+Amount: $${(inv.total || 0).toFixed(2)} (incl GST)
+${inv.dueDate ? 'Due date: ' + inv.dueDate + '\n' : ''}${inv.notes ? 'Notes: ' + inv.notes + '\n' : ''}
+Thank you.
+
+---
+Sent via TradieBooks`;
+
+      const text = `Subject: ${subject}\n\n${body}`;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Email draft copied. You can paste it into your email app.');
+      }).catch(() => {
+        alert(text);
+      });
     }
   </script>
 </body>
