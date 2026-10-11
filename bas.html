@@ -63,6 +63,7 @@
     font-size: 15px;
     font-weight: 600;
   }
+  .btn.primary { background:#163028; color:white; }
   nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 430px; background: white;
@@ -96,6 +97,8 @@
   </div>
 
   <p id="gstPending" style="display:none; margin:0 16px; color:#a44b2f; font-size:13px; line-height:1.5;"></p>
+  <button type="button" class="btn primary" onclick="downloadAccountantPack(document.getElementById('quarterSelect').value)">Export for accountant</button>
+  <p style="margin:0 16px 10px; color:#5a655a; font-size:12px; line-height:1.5;">Downloads one ZIP with all recorded invoices, payments, receipts, quarterly estimates and a review list.</p>
   <button class="btn" onclick="exportBAS()">Copy for accountant</button>
   <p style="margin:8px 16px; color:#5a655a; font-size:12px; line-height:1.5;">Estimate only. Cash basis uses full invoice payment dates; partial payments are not supported. Receipts use their recorded date. Check purchase credit eligibility before lodging.</p>
 
@@ -110,6 +113,7 @@
   <script src="reporting-period.js"></script>
   <script src="receipt-gst.js"></script>
   <script src="gst-report.js"></script>
+  <script src="accountant-export.js"></script>
   <script>
     const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
     const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');

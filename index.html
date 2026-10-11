@@ -57,6 +57,7 @@
     min-height: 48px;
   }
   .btn.secondary { background: #C45C3E; box-shadow: 0 4px 12px rgba(196, 92, 62, 0.25); }
+  .accountant-export { display:block; width:100%; margin-top:14px; padding:13px; border:0; border-radius:12px; background:#1E3A2F; color:white; font-size:15px; font-weight:600; cursor:pointer; }
   nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 430px; background: white;
@@ -86,6 +87,7 @@
     <div class="sub" id="gstNetLabel">to pay</div>
     <a id="gstPending" href="receipts.html" class="sub" style="display:none; color:#a44b2f;">Review receipt GST</a>
     <a id="paymentPending" href="invoices.html" class="sub" style="display:none; color:#a44b2f;">Review payment dates</a>
+    <button type="button" class="accountant-export" onclick="downloadAccountantPack()">Export for accountant</button>
   </div>
 
   <div class="card">
@@ -133,6 +135,7 @@
   <script src="receipt-gst.js"></script>
   <script src="gst-report.js"></script>
   <script src="html-utils.js"></script>
+  <script src="accountant-export.js"></script>
   <script>
     function load() {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');

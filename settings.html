@@ -81,6 +81,7 @@
   </div>
 
     <div class="item">
+      <button onclick="downloadAccountantPack()">Export for accountant</button>
       <button onclick="exportData()">Export backup</button>
       <label>Import backup <input type="file" id="importFile" accept=".json" onchange="importData(this)"></label>
     </div>
@@ -107,6 +108,9 @@
   </nav>
 
   <script src="reporting-period.js"></script>
+  <script src="receipt-gst.js"></script>
+  <script src="gst-report.js"></script>
+  <script src="accountant-export.js"></script>
   <script>
     let pendingBackup = null;
     document.getElementById('gstBasis').value = localStorage.getItem('gstBasis') === 'cash' ? 'cash' : 'noncash';
