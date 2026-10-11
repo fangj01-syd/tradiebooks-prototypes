@@ -73,21 +73,20 @@
 
   <div id="formView">
     <div class="form">
-      
       <label>Your ABN (optional)</label>
-      <input type="text" id="abn" placeholder="e.g. 12 345 678 901">
+      <input type="text" id="abn" placeholder="e.g. 12 345 678 901" oninput="updatePreview()">
 
       <label>Customer</label>
       <select id="customerSelect" onchange="onCustomerChange()">
         <option value="">Select existing or type new</option>
       </select>
-      <input type="text" id="customer" placeholder="Customer name" style="margin-top:8px;">
+      <input type="text" id="customer" placeholder="Customer name" style="margin-top:8px;" oninput="updatePreview()">
 
       <label>Description</label>
-      <input type="text" id="desc" placeholder="e.g. Bathroom plumbing">
+      <input type="text" id="desc" placeholder="e.g. Bathroom plumbing" oninput="updatePreview()">
 
       <label>Due date (optional)</label>
-      <input type="date" id="dueDate">
+      <input type="date" id="dueDate" onchange="updatePreview()">
 
       <label style="display:flex; align-items:center; gap:8px; margin-top:16px;">
         <input type="checkbox" id="hasGST" checked onchange="calc()" style="width:auto;">
@@ -95,7 +94,7 @@
       </label>
 
       <label>Notes (optional)</label>
-      <input type="text" id="notes" placeholder="e.g. Payment due in 7 days">
+      <input type="text" id="notes" placeholder="e.g. Payment due in 7 days" oninput="updatePreview()">
 
       <label>Amount (ex GST)</label>
       <input type="number" id="amount" placeholder="0.00" inputmode="decimal" oninput="calc()">
@@ -106,6 +105,13 @@
       <div style="font-size:16px; color:#555; margin-top:2px;">$<span id="gst">0.00</span></div>
       <div class="label" style="margin-top:16px;">Total (incl GST)</div>
       <div class="amount">$<span id="total">0.00</span></div>
+    </div>
+
+    <div class="total" style="text-align:left; margin-top:8px;">
+      <div style="font-size:13px; color:#7a857a; margin-bottom:8px;">Preview</div>
+      <div id="livePreview" style="font-size:14px; line-height:1.6; color:#333;">
+        Fill in the form to see preview
+      </div>
     </div>
 
     <button class="btn" onclick="save()">Save Invoice</button>
@@ -130,6 +136,25 @@
     function onCustomerChange() {
       const val = document.getElementById('customerSelect').value;
       if (val) document.getElementById('customer').value = val;
+      updatePreview();
+    }
+    function updatePreview() {
+      const customer = document.getElementById('customer').value || 'Customer';
+      const desc = document.getElementById('desc').value || 'Description';
+      const amt = parseFloat(document.getElementById('amount').value) || 0;
+      const hasGST = document.getElementById('hasGST').checked;
+      const gst = hasGST ? amt * 0.1 : 0;
+      const total = amt + gst;
+      const due = document.getElementById('dueDate').value;
+      const notes = document.getElementById('notes').value;
+      const abn = document.getElementById('abn').value;
+
+      let html = `<strong>${customer}</strong><br>${desc}<br>`;
+      if (abn) html += `ABN: ${abn}<br>`;
+      if (due) html += `Due: ${due}<br>`;
+      if (notes) html += `Notes: ${notes}<br>`;
+      html += `<strong>Total: $${total.toFixed(2)}</strong>`;
+      document.getElementById('livePreview').innerHTML = html;
     }
     function calc() {
       const amt = parseFloat(document.getElementById('amount').value) || 0;
@@ -138,6 +163,7 @@
       const total = amt + gst;
       document.getElementById('gst').textContent = gst.toFixed(2);
       document.getElementById('total').textContent = total.toFixed(2);
+      updatePreview();
     }
     function save() {
       const customer = document.getElementById('customer').value.trim();
