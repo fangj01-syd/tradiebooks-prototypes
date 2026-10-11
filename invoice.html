@@ -13,7 +13,7 @@
     max-width: 430px;
     margin: 0 auto;
     min-height: 100vh;
-    padding-bottom: 40px;
+    padding-bottom: 70px;
   }
   header {
     background: white;
@@ -120,6 +120,14 @@
     <h2 style="margin:12px 0;">Invoice saved</h2>
     <a href="invoices.html" class="btn" style="display:inline-block; width:auto; padding:14px 36px;">View Invoices</a>
   </div>
+
+  <nav style="position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; background:white; display:flex; border-top:1px solid #eee; padding:6px 0 10px; z-index:100;">
+    <a href="index.html" style="flex:1; text-align:center; text-decoration:none; color:#aaa; font-size:10px;"><div style="font-size:22px;">🏠</div>Home</a>
+    <a href="invoices.html" style="flex:1; text-align:center; text-decoration:none; color:#aaa; font-size:10px;"><div style="font-size:22px;">📄</div>Invoices</a>
+    <a href="receipts.html" style="flex:1; text-align:center; text-decoration:none; color:#aaa; font-size:10px;"><div style="font-size:22px;">🧾</div>Receipts</a>
+    <a href="bas.html" style="flex:1; text-align:center; text-decoration:none; color:#aaa; font-size:10px;"><div style="font-size:22px;">📊</div>BAS</a>
+    <a href="settings.html" style="flex:1; text-align:center; text-decoration:none; color:#aaa; font-size:10px;"><div style="font-size:22px;">⚙️</div>More</a>
+  </nav>
 
   <script>
     let lineCount = 0;
