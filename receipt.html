@@ -47,6 +47,7 @@
     outline: none;
   }
   input:focus { border-color: #1E3A2F; }
+  .hint { color: #69756b; font-size: 12px; line-height: 1.5; margin-top: 6px; }
   .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
   .chip {
     padding: 8px 14px;
@@ -76,16 +77,20 @@
 </head>
 <body>
   <header>
-    <a href="index.html">←</a>
-    <h1>Add Receipt</h1>
+    <a id="backLink" href="index.html">←</a>
+    <h1 id="pageTitle">Add Receipt</h1>
   </header>
 
   <div id="formView">
     <div class="camera">📷<br><span style="font-size:12px;opacity:0.7;">Tap to capture (demo)</span></div>
 
     <div class="form">
-      <label>Amount</label>
-      <input type="number" id="amount" placeholder="0.00" inputmode="decimal">
+      <label for="amount">Total paid</label>
+      <input type="number" id="amount" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal">
+
+      <label for="gst">GST included in this receipt</label>
+      <input type="number" id="gst" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+      <p class="hint" id="gstHint">Enter the GST shown on the receipt, or 0 if there is none. BAS will use this amount.</p>
 
       <label>Merchant</label>
       <input type="text" id="merchant" placeholder="e.g. Bunnings">
@@ -99,34 +104,78 @@
       </div>
     </div>
 
-    <button class="btn" onclick="save()">Save Receipt</button>
+    <button class="btn" id="saveButton" onclick="save()">Save Receipt</button>
   </div>
 
   <div id="successView" class="success">
     <div style="font-size:56px; color:#1E3A2F;">✓</div>
-    <h2>Receipt saved</h2>
+    <h2 id="successTitle">Receipt saved</h2>
     <a href="receipts.html" class="btn" style="display:inline-block; width:auto; padding:14px 36px; margin-top:16px;">View Receipts</a>
   </div>
 
+  <script src="receipt-gst.js"></script>
   <script>
     let category = 'Materials';
+    const params = new URLSearchParams(location.search);
+    const editing = params.has('idx');
+    const idx = Number(params.get('idx'));
+    const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
+    const existing = editing && Number.isInteger(idx) && idx >= 0 ? receipts[idx] : null;
+
+    function selectCategory(value) {
+      category = value;
+      document.querySelectorAll('.chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.cat === value);
+      });
+    }
+
+    if (editing) {
+      if (!existing) {
+        alert('Receipt not found');
+        location.href = 'receipts.html';
+      } else {
+        document.title = 'Edit Receipt - TradieBooks';
+        document.getElementById('pageTitle').textContent = 'Edit Receipt';
+        document.getElementById('backLink').href = 'receipts.html';
+        document.getElementById('saveButton').textContent = 'Save Changes';
+        document.getElementById('successTitle').textContent = 'Receipt updated';
+        document.getElementById('amount').value = existing.amount;
+        document.getElementById('merchant').value = existing.merchant || '';
+        if (hasRecordedReceiptGst(existing)) document.getElementById('gst').value = existing.gst;
+        else document.getElementById('gstHint').textContent = 'GST was not recorded. Check the original receipt and enter the actual GST, or 0 if there is none.';
+        selectCategory(existing.category || 'Other');
+      }
+    }
+
     document.getElementById('chips').addEventListener('click', e => {
       if (e.target.classList.contains('chip')) {
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        e.target.classList.add('active');
-        category = e.target.dataset.cat;
+        selectCategory(e.target.dataset.cat);
       }
     });
 
     function save() {
-      const amount = parseFloat(document.getElementById('amount').value) || 0;
+      const amountText = document.getElementById('amount').value.trim();
+      const gstText = document.getElementById('gst').value.trim();
+      const amount = Number(amountText);
+      const gst = Number(gstText);
       const merchant = document.getElementById('merchant').value.trim();
-      if (!merchant || amount <= 0) { alert('Please enter merchant and amount'); return; }
-      const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
-      receipts.unshift({
-        id: Date.now(), merchant, amount, category,
-        date: new Date().toISOString().slice(0, 10)
-      });
+      if (!merchant || !amountText || !Number.isFinite(amount) || amount <= 0) {
+        alert('Please enter merchant and a positive total paid');
+        return;
+      }
+      if (!gstText || !Number.isFinite(gst) || gst < 0 || gst > amount) {
+        alert('Enter the GST shown on the receipt, or 0 if there is none');
+        return;
+      }
+      if (editing) {
+        if (!existing) return;
+        Object.assign(existing, { merchant, amount, gst, category });
+      } else {
+        receipts.unshift({
+          id: Date.now(), merchant, amount, gst, category,
+          date: new Date().toISOString().slice(0, 10)
+        });
+      }
       localStorage.setItem('receipts', JSON.stringify(receipts));
       document.getElementById('formView').style.display = 'none';
       document.getElementById('successView').style.display = 'block';

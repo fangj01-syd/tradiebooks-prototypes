@@ -93,6 +93,7 @@
     <div style="font-size:12px; opacity:0.7;">1A − 1B</div>
   </div>
 
+  <p id="gstPending" style="display:none; margin:0 16px; color:#a44b2f; font-size:13px;"></p>
   <button class="btn" onclick="exportBAS()">Copy for accountant</button>
   <p style="margin:8px 16px; color:#5a655a; font-size:12px; line-height:1.5;">Estimate from recorded dates. Check your GST accounting basis and purchase credits before lodging.</p>
 
@@ -105,6 +106,7 @@
   </nav>
 
   <script src="reporting-period.js"></script>
+  <script src="receipt-gst.js"></script>
   <script>
     const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
     const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
@@ -118,14 +120,20 @@
     document.getElementById('period').textContent = periodLabel;
     const totalSales = quarterInvoices.reduce((s, i) => s + (i.total || 0), 0);
     const gstSales = quarterInvoices.reduce((s, i) => s + (i.gst || 0), 0);
-    const gstPurchases = quarterReceipts.reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
+    const gstSummary = receiptGstSummary(quarterReceipts);
+    const gstPurchases = gstSummary.total;
     const net = Math.max(0, gstSales - gstPurchases);
+    if (gstSummary.pending) {
+      const pending = document.getElementById('gstPending');
+      pending.style.display = 'block';
+      pending.textContent = `${gstSummary.pending} receipt${gstSummary.pending === 1 ? '' : 's'} in this quarter need${gstSummary.pending === 1 ? 's' : ''} GST review. Their GST is excluded from 1B.`;
+    }
     document.getElementById('g1').textContent = '$' + Math.round(totalSales);
     document.getElementById('a1').textContent = '$' + Math.round(gstSales);
     document.getElementById('b1').textContent = '$' + Math.round(gstPurchases);
     document.getElementById('net').textContent = '$' + Math.round(net);
     function exportBAS() {
-      const text = `TradieBooks BAS estimate (${periodLabel})\n\nG1 Total sales: $${totalSales.toFixed(2)}\n1A GST on sales: $${gstSales.toFixed(2)}\n1B GST on purchases: $${gstPurchases.toFixed(2)}\nGST to pay: $${net.toFixed(2)}\n\nCheck your GST accounting basis and purchase credits before lodging.`;
+      const text = `TradieBooks BAS estimate (${periodLabel})\n\nG1 Total sales: $${totalSales.toFixed(2)}\n1A GST on sales: $${gstSales.toFixed(2)}\n1B GST on purchases: $${gstPurchases.toFixed(2)}\nGST to pay: $${net.toFixed(2)}\n\n${gstSummary.pending} receipt(s) need GST review and are excluded from 1B. Check your GST accounting basis and purchase credits before lodging.`;
       navigator.clipboard.writeText(text).then(() => alert('Copied')).catch(() => alert(text));
     }
   </script>

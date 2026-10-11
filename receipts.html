@@ -50,6 +50,11 @@
     border-radius: 8px;
     font-size: 13px;
   }
+  .item a { color: #1E3A2F; font-size: 13px; text-decoration: none; font-weight: 600; }
+  .item .details { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .item .details small { display: block; color: #667368; margin-top: 4px; }
+  .item .actions { display: flex; align-items: center; gap: 10px; margin-left: 12px; }
+  .item .amount { font-weight: 600; white-space: nowrap; }
   .empty { text-align: center; padding: 60px 20px; color: #888; }
   nav {
     position: fixed;
@@ -74,11 +79,12 @@
     <a href="bas.html"><div>📊</div>BAS</a>
     <a href="settings.html"><div>⚙️</div>More</a>
   </nav>
+  <script src="receipt-gst.js"></script>
   <script>
     function render() {
       const receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
       const q = document.getElementById('search').value.toLowerCase();
-      const filtered = receipts.filter(r => r.merchant.toLowerCase().includes(q));
+      const filtered = receipts.filter(r => (r.merchant || '').toLowerCase().includes(q));
       const list = document.getElementById('list');
       if (filtered.length === 0) {
         list.innerHTML = '<div class="empty">' + (receipts.length === 0 ? 'No receipts yet.<br>Add your first one.' : 'No matches found.') + '</div>';
@@ -89,13 +95,26 @@
         const idx = receipts.indexOf(r);
         const div = document.createElement('div');
         div.className = 'item';
-        div.innerHTML = `
-          <div><strong>${r.merchant}</strong><br><small>${r.category}</small></div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <span>$${r.amount.toFixed(2)}</span>
-            <button onclick="deleteRec(${idx})">Delete</button>
-          </div>
-        `;
+        const details = document.createElement('div');
+        details.className = 'details';
+        const merchant = document.createElement('strong');
+        merchant.textContent = r.merchant || 'Receipt';
+        const meta = document.createElement('small');
+        meta.textContent = `${r.category || 'Other'} · ${hasRecordedReceiptGst(r) ? 'GST $' + r.gst.toFixed(2) : 'GST to review'}`;
+        details.append(merchant, meta);
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+        const amount = document.createElement('span');
+        amount.className = 'amount';
+        amount.textContent = '$' + Number(r.amount || 0).toFixed(2);
+        const edit = document.createElement('a');
+        edit.href = `receipt.html?idx=${idx}`;
+        edit.textContent = 'Edit';
+        const remove = document.createElement('button');
+        remove.textContent = 'Delete';
+        remove.addEventListener('click', () => deleteRec(idx));
+        actions.append(amount, edit, remove);
+        div.append(details, actions);
         list.appendChild(div);
       });
     }

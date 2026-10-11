@@ -84,6 +84,7 @@
     <h2>GST this quarter</h2>
     <div class="amount" id="gstAmount">$0</div>
     <div class="sub">to pay</div>
+    <a id="gstPending" href="receipts.html" class="sub" style="display:none; color:#a44b2f;">Review receipt GST</a>
   </div>
 
   <div class="card">
@@ -128,6 +129,7 @@
   </nav>
 
   <script src="reporting-period.js"></script>
+  <script src="receipt-gst.js"></script>
   <script>
     function load() {
       const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
@@ -136,9 +138,13 @@
       const unpaidTotal = unpaid.reduce((s, i) => s + (i.total || 0), 0);
       const period = currentQuarter();
       const salesGST = invoices.filter(i => period.includes(i.date)).reduce((s, i) => s + (i.gst || 0), 0);
-      const purchaseGST = receipts.filter(r => period.includes(r.date)).reduce((s, r) => s + ((r.amount || 0) * 0.1), 0);
+      const gstSummary = receiptGstSummary(receipts.filter(r => period.includes(r.date)));
+      const purchaseGST = gstSummary.total;
       const netGST = Math.max(0, salesGST - purchaseGST);
       document.getElementById('gstAmount').textContent = '$' + Math.round(netGST);
+      const gstPending = document.getElementById('gstPending');
+      gstPending.style.display = gstSummary.pending ? 'block' : 'none';
+      gstPending.textContent = `${gstSummary.pending} receipt${gstSummary.pending === 1 ? '' : 's'} need${gstSummary.pending === 1 ? 's' : ''} GST review`;
       document.getElementById('unpaidAmount').textContent = '$' + Math.round(unpaidTotal);
       document.getElementById('unpaidCount').textContent = unpaid.length + ' invoice' + (unpaid.length !== 1 ? 's' : '');
 
