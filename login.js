@@ -8,7 +8,7 @@
   let backedUp = false;
   let email = '';
   const money = value => '$' + Number(value).toFixed(2);
-  const show = id => ['setup','emailStep','codeStep','migrationStep'].forEach(name => $(name).classList.toggle('hidden', name !== id));
+  const show = id => ['setup','emailStep','emailSentStep','migrationStep'].forEach(name => $(name).classList.toggle('hidden', name !== id));
   const status = (message, error = false) => { $('status').textContent = message; $('status').style.color = error ? '#a23e2b' : '#163028'; };
   function downloadBackup() {
     const blob = new Blob([JSON.stringify({ ...localBook, exported: new Date().toISOString() }, null, 2)], { type: 'application/json' });
@@ -103,15 +103,8 @@
     });
     if (error) { status(error.message, true); return; }
     $('sentTo').textContent = email;
-    show('codeStep');
-    status('Email sent. Open the link in this browser to keep access to any local book here.');
-  });
-  $('codeForm').addEventListener('submit', async event => {
-    event.preventDefault();
-    status('Checking code...');
-    const { data, error } = await cloud.client.auth.verifyOtp({ email, token: $('code').value.trim(), type: 'email' });
-    if (error || !data.user) { status(error ? error.message : 'Could not sign in.', true); return; }
-    try { await afterSignIn(data.user); } catch (problem) { status(problem.message, true); }
+    show('emailSentStep');
+    status('Email sent. Tap the sign-in link in your email.');
   });
   $('changeEmail').addEventListener('click', () => { show('emailStep'); status(''); });
   $('backupButton').addEventListener('click', downloadBackup);

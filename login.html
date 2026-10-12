@@ -37,10 +37,9 @@ small { display:block; color:#66746a; margin-top:12px; }
     <form id="emailForm"><label for="email">Email address</label><input id="email" type="email" autocomplete="email" required><button type="submit">Send sign-in email</button></form>
     <small>We'll email a sign-in link. No password needed.</small>
   </section>
-  <section id="codeStep" class="card hidden">
+  <section id="emailSentStep" class="card hidden">
     <h2>Check your email</h2>
-    <p>Open the sign-in link sent to <strong id="sentTo"></strong> in this browser. If your email contains a 6-digit code instead, enter it below.</p>
-    <form id="codeForm"><label for="code">Code (if provided)</label><input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required><button type="submit">Open my book with code</button></form>
+    <p>We sent a sign-in link to <strong id="sentTo"></strong>. Open the email and tap the link to sign in. No code is needed.</p>
     <button id="changeEmail" class="secondary" type="button">Use another email</button>
   </section>
   <section id="migrationStep" class="card hidden">
