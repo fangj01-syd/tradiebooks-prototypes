@@ -15,6 +15,7 @@ Mobile-first web prototype for Australian solo tradies.
 - One-click accountant ZIP export with invoice, item, payment, receipt, quarterly GST and review CSVs
 - Optional email-link accounts and cloud book recovery through Supabase
 - Existing browser books can be backed up, migrated and checked by record counts and totals
+- Seven-day trial per account; expired books remain readable and exportable
 
 The accountant export is generated locally in the browser and downloads one ZIP. It includes all recorded invoices and receipts, a selected-quarter summary, quarterly GST estimates, a review list and a JSON backup. When cloud accounts are enabled, book data is also sent to the user's Supabase project.
 
@@ -25,6 +26,11 @@ The accountant export is generated locally in the browser and downloads one ZIP.
 4. Test with two separate email accounts. Each account should see only its own book. On the original browser, download the offered backup before uploading the old local book. On a second device, sign in with the same email and verify the invoice and receipt counts and totals.
 
 Until the project URL and key are configured, the current local-only app continues to work. Once configured, every page requires sign-in. On each page the cloud book is loaded before it is shown, and edits are confirmed only after the cloud save succeeds. A revision check rejects a stale device's save instead of silently overwriting a newer book. This first version stores one JSON book per user; it does not merge simultaneous edits or support offline edits. Keep exporting backups regularly.
+
+## Activate the seven-day trial
+Deploy the matching website code, then apply [`supabase/2026-10-12-seven-day-trial.sql`](supabase/2026-10-12-seven-day-trial.sql) in this project's Supabase SQL Editor. It adds a server-owned trial row for each account, starts the seven days the first time that account opens a book after activation, and refuses writes after expiry. This also gives existing users a fresh seven days from their first visit after activation. The migration removes direct browser write access to `books`; all changes use the revision-checked `save_book` function. The site tolerates the function being absent during deployment, but the trial is not active until the SQL is applied.
+
+After expiry, users can still sign in, view invoices and receipts, download PDFs and backups, and export the accountant ZIP. Creating or changing records is paused. To manually extend one user's trial, update that user's `ends_at` in `public.book_trials` from the Supabase dashboard; users cannot change this table. No payment or automatic subscription is configured yet. Test with a separate account before inviting users.
 
 ## BAS estimate limits
 Cash-basis calculations use the date a full invoice payment was recorded. Partial payments are not supported. Receipt dates are used for purchase GST in both modes. Check GST credit eligibility and accounting treatment before lodging.

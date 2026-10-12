@@ -9,6 +9,7 @@
   let user;
   let revision = 0;
   let busy = false;
+  let access = null;
 
   function readLocal() {
     const invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
@@ -92,6 +93,85 @@
     if (error) throw error;
     return data;
   }
+  async function fetchAccess() {
+    const { data, error } = await client.rpc('get_book_access');
+    // The website may deploy before the SQL migration. The old save function
+    // remains available until that migration is applied; never block a book.
+    if (error && error.code === 'PGRST202') return null;
+    if (error) throw error;
+    if (!data || typeof data.can_write !== 'boolean' || !data.ends_at) throw new Error('Trial status is unavailable.');
+    return data;
+  }
+  function trialExpired() {
+    return access && (!access.can_write || Date.now() >= Date.parse(access.ends_at));
+  }
+  function downloadPending() {
+    const raw = localStorage.getItem(pendingKey);
+    if (!raw) return;
+    try {
+      const pending = JSON.parse(raw);
+      if (pending.owner !== user.id) return;
+      const blob = new Blob([JSON.stringify(pending.data, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'tradiebooks-unsaved-recovery.json';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    } catch (error) { alert('Could not export the unsaved change: ' + error.message); }
+  }
+  function showAccessNotice() {
+    if (!access) return;
+    const notice = document.createElement('aside');
+    notice.id = 'trialNotice';
+    notice.setAttribute('role', 'status');
+    const date = new Date(access.ends_at);
+    const end = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (trialExpired()) {
+      notice.textContent = 'Your 7-day trial ended. You can still view and export your book. Saving changes is paused.';
+    } else {
+      const days = Math.max(1, Math.ceil((date.getTime() - Date.now()) / 86400000));
+      notice.textContent = '7-day trial · ' + days + ' day' + (days === 1 ? '' : 's') + ' left' + (end ? ' · Ends ' + end : '');
+    }
+    if (trialExpired() && localStorage.getItem(pendingKey)) {
+      const backup = document.createElement('button');
+      backup.type = 'button';
+      backup.textContent = 'Download unsaved change';
+      backup.onclick = downloadPending;
+      notice.appendChild(backup);
+    }
+    document.body.prepend(notice);
+    const style = document.createElement('style');
+    style.textContent = '#trialNotice{position:relative;z-index:20;padding:10px 16px;background:#e7eee8;color:#163028;font:600 13px/1.4 system-ui;text-align:center}#trialNotice button{margin:0 0 0 8px;padding:3px 8px;border:1px solid #163028;border-radius:6px;background:transparent;color:#163028;font:inherit;cursor:pointer}body.tradiebooks-readonly #trialNotice{background:#fbe9df;color:#813821}';
+    document.head.appendChild(style);
+    if (!trialExpired()) return;
+    document.body.classList.add('tradiebooks-readonly');
+    const disableWrites = () => {
+      document.querySelectorAll('a[href^="invoice.html"],a[href^="receipt.html"],a[href^="edit-invoice.html"]').forEach(link => {
+        link.setAttribute('aria-disabled', 'true');
+        link.style.opacity = '.4';
+      });
+      const page = location.pathname.split('/').pop();
+      if (page === 'invoices.html' || page === 'receipts.html') {
+        document.querySelectorAll('.actions button').forEach(button => { button.disabled = true; button.style.opacity = '.4'; });
+      }
+      if (page === 'invoice.html' || page === 'edit-invoice.html' || page === 'receipt.html') {
+        document.querySelectorAll('input,select,textarea,button').forEach(control => {
+          if (!control.closest('#trialNotice')) control.disabled = true;
+        });
+      }
+      if (page === 'settings.html') {
+        document.querySelectorAll('#gstBasis,input[type="file"],button[onclick="confirmImport()"],button[onclick="clearAll()"]').forEach(control => { control.disabled = true; });
+      }
+    };
+    disableWrites();
+    new MutationObserver(disableWrites).observe(document.body, { childList: true, subtree: true });
+    document.addEventListener('click', event => {
+      const link = event.target.closest('a[aria-disabled="true"]');
+      if (!link) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+  }
   async function recoverPending(row) {
     const raw = localStorage.getItem(pendingKey);
     if (!raw) return row;
@@ -101,6 +181,7 @@
       localStorage.removeItem(pendingKey);
       return row;
     }
+    if (trialExpired()) return row;
     if (Number(row ? row.revision : 0) !== Number(pending.expected)) {
       throw new Error('This browser has an unsaved change that conflicts with a newer cloud book. Export a local backup before retrying.');
     }
@@ -123,6 +204,7 @@
       }
       if (owner && owner !== user.id) { clearLocal(); localStorage.removeItem(ownerKey); }
       if (hasUnownedBook()) { location.replace(loginUrl()); return; }
+      access = await fetchAccess();
       const row = await recoverPending(await fetchBook(user));
       const remote = row ? row.data : { invoices: [], receipts: [], lastInvoiceNumber: 1000, gstBasis: 'noncash' };
       const before = JSON.stringify(readLocal());
@@ -133,12 +215,17 @@
       document.documentElement.classList.remove('tradiebooks-loading');
       const accountEl = document.getElementById('accountIdentity');
       if (accountEl) accountEl.textContent = user.email || user.id;
+      showAccessNotice();
       document.dispatchEvent(new Event('tradiebooks:ready'));
     } catch (error) { showBlock('Could not open your cloud book: ' + error.message); }
   }
   async function commit(mutator) {
     if (!enabled) { mutator(); return true; }
     if (!user || busy) return false;
+    if (trialExpired()) {
+      alert('Your 7-day trial has ended. You can still view and export your book.');
+      return false;
+    }
     busy = true;
     let before;
     try {
@@ -155,7 +242,11 @@
     } catch (error) {
       if (before) writeLocal(before);
       localStorage.removeItem(pendingKey);
-      alert('Cloud save failed. Your last change was not saved. ' + error.message + (error.message.includes('revision_conflict') ? ' Reload to get the latest book.' : ' Please try again.'));
+      if (error.message.includes('trial_expired')) {
+        alert('Your 7-day trial has ended. This change was not saved. Reload to view and export your book.');
+      } else {
+        alert('Cloud save failed. Your last change was not saved. ' + error.message + (error.message.includes('revision_conflict') ? ' Reload to get the latest book.' : ' Please try again.'));
+      }
       return false;
     } finally { busy = false; document.body.classList.remove('tradiebooks-saving'); }
   }
@@ -168,7 +259,7 @@
     localStorage.removeItem(pendingKey);
     location.href = 'login.html';
   }
-  window.TradieCloud = { enabled, readLocal, writeLocal, clearLocal, hasUnownedBook, summary, safeNext, loadSdk, fetchBook, commit, signOut, get client() { return client; }, get user() { return user; }, get revision() { return revision; }, setRevision(value) { revision = Number(value); }, ownerKey };
+  window.TradieCloud = { enabled, readLocal, writeLocal, clearLocal, hasUnownedBook, summary, safeNext, loadSdk, fetchBook, commit, signOut, get client() { return client; }, get user() { return user; }, get revision() { return revision; }, get access() { return access; }, setRevision(value) { revision = Number(value); }, ownerKey };
   if (enabled && !location.pathname.endsWith('/login.html')) {
     document.documentElement.classList.add('tradiebooks-loading');
     const style = document.createElement('style');
